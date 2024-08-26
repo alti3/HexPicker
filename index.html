@@ -1,0 +1,280 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Leaflet Map - Tripoli, Libya with H3 Cells</title>
+    <!-- Include Leaflet CSS -->
+    <link rel="stylesheet" href="https://unpkg.com/leaflet@1.7.1/dist/leaflet.css" />
+    <!-- Include Leaflet Draw CSS -->
+    <link rel="stylesheet" href="https://unpkg.com/leaflet-draw@1.0.4/dist/leaflet.draw.css" />
+    <!-- Include H3 JavaScript library -->
+    <script src="https://unpkg.com/h3-js@3.7.2/dist/h3-js.umd.js"></script>
+    <style>
+        /* Reset default margins and set full height and width */
+        body, html {
+            margin: 0;
+            padding: 0;
+            height: 100%;
+            width: 100%;
+        }
+        /* Set map container to full height and width */
+        #map {
+            height: 100%;
+            width: 100%;
+        }
+        /* Style for draw, copy, and clear buttons */
+        #drawButton, #copyButton, #clearButton {
+            position: absolute;
+            top: 10px;
+            z-index: 1000;
+            padding: 10px;
+            background-color: white;
+            border: 1px solid #ccc;
+            border-radius: 4px;
+            cursor: pointer;
+        }
+        /* Position draw button */
+        #drawButton {
+            right: 10px;
+        }
+        /* Position copy button */
+        #copyButton {
+            right: 150px;
+        }
+        /* Position clear button */
+        #clearButton {
+            right: 290px;
+        }
+        /* Style for hexagon counter */
+        #hexagonCounter {
+            position: absolute;
+            top: 10px;
+            right: 430px;
+            z-index: 1000;
+            padding: 10px;
+            background-color: white;
+            border: 1px solid #ccc;
+            border-radius: 4px;
+        }
+    </style>
+</head>
+<body>
+    <!-- Map container -->
+    <div id="map"></div>
+    <!-- Draw polygon button -->
+    <button id="drawButton">Draw Polygon</button>
+    <!-- Copy cell IDs button -->
+    <button id="copyButton">Copy Cell IDs</button>
+    <!-- Clear selected cells button -->
+    <button id="clearButton">Clear Selected</button>
+    <!-- Hexagon counter display -->
+    <div id="hexagonCounter">Selected Hexagons: 0</div>
+    
+    <!-- Include Leaflet JavaScript -->
+    <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
+    <!-- Include Leaflet Draw JavaScript -->
+    <script src="https://unpkg.com/leaflet-draw@1.0.4/dist/leaflet.draw.js"></script>
+    <script>
+        // Initialize the map centered on Tripoli, Libya
+        var map = L.map('map').setView([32.85, 13.1913], 13);
+
+        // Add OpenStreetMap tile layer
+        L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
+            attribution: '&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors'
+        }).addTo(map);
+
+        // Initialize variables
+        var h3Resolution = 8;
+        var drawnCells = new Set();
+        var selectedCells = new Set();
+        var cellPolygons = {};
+        var hexagonCounter = document.getElementById('hexagonCounter');
+        var copyButton = document.getElementById('copyButton');
+        var clearButton = document.getElementById('clearButton');
+
+        // Update the hexagon counter display
+        function updateHexagonCounter() {
+            hexagonCounter.textContent = 'Selected Hexagons: ' + selectedCells.size;
+        }
+
+        // Draw H3 cells on the map
+        function drawH3Cells() {
+            // Get the map bounds
+            var bounds = map.getBounds();
+            var nw = bounds.getNorthWest();
+            var se = bounds.getSouthEast();
+
+            // Get H3 hexagons within the map bounds
+            var hexagons = h3.polyfill([
+                [nw.lat, nw.lng], // North West
+                [se.lat, nw.lng], // North East
+                [se.lat, se.lng], // South East
+                [nw.lat, se.lng] // South West
+            ],
+            h3Resolution // Resolution level
+        );
+
+            hexagons.forEach(function(hexagon) {
+                // Check if the hexagon has already been drawn
+                if (!drawnCells.has(hexagon)) {
+                    // Convert H3 hexagon to polygon coordinates
+                    var polygonCoords = h3.h3ToGeoBoundary(hexagon);
+                    var leafletCoords = polygonCoords.map(function(coord) {
+                        return [coord[0], coord[1]];
+                    });
+
+                    // Create and add polygon to the map
+                    var polygon = L.polygon(leafletCoords, {
+                        color: 'blue',
+                        weight: 1,
+                        fillOpacity: 0,
+                        fill: true
+                    }).addTo(map);
+
+                    polygon.h3Index = hexagon;
+
+                    // Add mouseover event
+                    polygon.on('mouseover', function (e) {
+                        if (!selectedCells.has(this.h3Index)) {
+                            // Set fill opacity to 0.3 for highlighted cells
+                            this.setStyle({
+                                fillOpacity: 0.3
+                            });
+                        }
+                    });
+
+                    // Add mouseout event
+                    polygon.on('mouseout', function (e) {
+                        if (!selectedCells.has(this.h3Index)) {
+                            // Set fill opacity to 0 for non-highlighted cells
+                            this.setStyle({
+                                fillOpacity: 0
+                            });
+                        }
+                    });
+
+                    // Add click event
+                    polygon.on('click', function (e) {
+                        if (selectedCells.has(this.h3Index)) {
+                            // Deselect the cell
+                            selectedCells.delete(this.h3Index);
+                            this.setStyle({
+                                fillOpacity: 0
+                            });
+                        } else {
+                            // Select the cell
+                            selectedCells.add(this.h3Index);
+                            this.setStyle({
+                                fillOpacity: 0.5
+                            });
+                        }
+                        updateHexagonCounter();
+                        console.log('Selected cells:', Array.from(selectedCells));
+                    });
+
+                    // Add hexagon to cell polygons
+                    cellPolygons[hexagon] = polygon;
+
+                    // Add hexagon to drawn cells
+                    drawnCells.add(hexagon);
+                }
+            });
+        }
+
+        // Initialize Leaflet Draw control
+        var drawControl = new L.Control.Draw({
+            draw: {
+                polygon: true,
+                polyline: false,
+                rectangle: false,
+                circle: false,
+                marker: false,
+                circlemarker: false
+            }
+        });
+
+        var drawButton = document.getElementById('drawButton');
+        var isDrawing = false;
+
+        // Add click event listener to draw button
+        drawButton.addEventListener('click', function() {
+            if (!isDrawing) {
+                // Add drawing control
+                map.addControl(drawControl);
+                isDrawing = true;
+                drawButton.textContent = 'Cancel Drawing';
+            } else {
+                // Remove drawing control
+                map.removeControl(drawControl);
+                isDrawing = false;
+                drawButton.textContent = 'Draw Polygon';
+            }
+        });
+
+        // Handle polygon creation event
+        map.on('draw:created', function(e) {
+            var layer = e.layer;
+            var drawnPolygon = layer.toGeoJSON().geometry.coordinates[0];
+
+            // Convert to H3 format
+            var h3Polygon = drawnPolygon.map(function(coord) {
+                return [coord[1], coord[0]]; // Swap lat and lng
+            });
+
+            // Get H3 indexes within the polygon
+            var hexagons = h3.polyfill(h3Polygon, 8);
+
+            // Select all cells within the polygon
+            hexagons.forEach(function(hexagon) {
+                if (cellPolygons[hexagon]) {
+                    if (!selectedCells.has(hexagon)) {
+                        selectedCells.add(hexagon);
+                        cellPolygons[hexagon].setStyle({
+                            fillOpacity: 0.5
+                        });
+                    }
+                }
+            });
+
+            // Update the hexagon counter display
+            updateHexagonCounter();
+            console.log('Selected cells:', selectedCells);
+
+            // Remove drawing control after polygon is created
+            map.removeControl(drawControl);
+            isDrawing = false;
+            drawButton.textContent = 'Draw Polygon';
+        });
+
+        // Add click event listener to copy button
+        copyButton.addEventListener('click', function() {
+            var cellIdsString = Array.from(selectedCells).join(',');
+            navigator.clipboard.writeText(cellIdsString).then(function() {
+                alert('Cell IDs copied to clipboard!');
+            }, function(err) {
+                console.error('Could not copy text: ', err);
+            });
+        });
+
+        // Add click event listener to clear button
+        clearButton.addEventListener('click', function() {
+            selectedCells.forEach(function(hexagon) {
+                if (cellPolygons[hexagon]) {
+                    cellPolygons[hexagon].setStyle({
+                        fillOpacity: 0
+                    });
+                }
+            });
+            selectedCells.clear();
+            updateHexagonCounter();
+            console.log('All cells cleared');
+        });
+
+        // Redraw cells when map moves
+        map.on('moveend', drawH3Cells);
+        // Initial cell drawing
+        drawH3Cells();
+    </script>
+</body>
+</html>
