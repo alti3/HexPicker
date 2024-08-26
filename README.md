@@ -2,6 +2,12 @@
 
 This project demonstrates an interactive web map using Leaflet.js and the H3 geospatial indexing system. The map allows users to visualize, select, and interact with H3 hexagonal cells.
 
+## Live demo
+You can try the live demo [here](https://alti3.github.io/hexpicker/).
+
+https://alti3.github.io/hexpicker/
+
+## Screenshot
 ![alt text](image.png)
 
 ## Features
@@ -36,7 +42,7 @@ This project demonstrates an interactive web map using Leaflet.js and the H3 geo
 No installation is required. Simply clone the repository and open `index.html` in a web browser.
 
 ```bash
-git clone https://github.com/yourusername/leaflet-h3-map.git
+git clone https://github.com/alti3/hexpicker.git
 cd leaflet-h3-map
 open index.html
 ```
