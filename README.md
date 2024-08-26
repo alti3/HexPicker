@@ -1,13 +1,13 @@
 # Leaflet Map with H3 Cells
 
-This project demonstrates an interactive web map using Leaflet.js and the H3 geospatial indexing system. The map is centered on Tripoli, Libya, and allows users to visualize, select, and interact with H3 hexagonal cells.
+This project demonstrates an interactive web map using Leaflet.js and the H3 geospatial indexing system. The map allows users to visualize, select, and interact with H3 hexagonal cells.
 
 ![alt text](image.png)
 
 ## Features
 
-- Interactive map centered on Tripoli, Libya
-- Display of H3 hexagonal cells (resolution 8)
+- Interactive map centered on user-defined coordinates (default: Tripoli, Libya)
+- Display of H3 hexagonal cells (default resolution: 8)
 - Ability to select individual cells by clicking
 - Draw polygon tool to select multiple cells at once
 - Copy selected cell IDs to clipboard
@@ -20,7 +20,7 @@ This project demonstrates an interactive web map using Leaflet.js and the H3 geo
 - CSS3
 - JavaScript
 - [Leaflet.js](https://leafletjs.com/) for map rendering
-- [Leaflet.draw](https://github.com/Leaflet/Leaflet.draw) for polygon drawing functionality
+- [Leaflet.draw](https://leaflet.github.io/Leaflet.draw/docs/leaflet-draw-latest.html) for polygon drawing functionality
 - [H3-js](https://github.com/uber/h3-js) for H3 geospatial indexing
 
 ## Usage
@@ -38,8 +38,8 @@ No installation is required. Simply clone the repository and open `index.html` i
 ```bash
 git clone https://github.com/yourusername/leaflet-h3-map.git
 cd leaflet-h3-map
-```
 open index.html
+```
 
 
 ## Contributing
