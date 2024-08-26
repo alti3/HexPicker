@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Leaflet Map - Tripoli, Libya with H3 Cells</title>
+    <title>Hex Picker - Leaflet Map with H3 Cells picker</title>
     <!-- Include Leaflet CSS -->
     <link rel="stylesheet" href="https://unpkg.com/leaflet@1.7.1/dist/leaflet.css" />
     <!-- Include Leaflet Draw CSS -->
@@ -92,6 +92,7 @@
         var hexagonCounter = document.getElementById('hexagonCounter');
         var copyButton = document.getElementById('copyButton');
         var clearButton = document.getElementById('clearButton');
+        var cellsLayer = L.layerGroup().addTo(map);
 
         // Update the hexagon counter display
         function updateHexagonCounter() {
@@ -124,13 +125,13 @@
                         return [coord[0], coord[1]];
                     });
 
-                    // Create and add polygon to the map
+                    // Create and add polygon to the cellsLayer
                     var polygon = L.polygon(leafletCoords, {
                         color: 'blue',
                         weight: 1,
                         fillOpacity: 0,
                         fill: true
-                    }).addTo(map);
+                    });
 
                     polygon.h3Index = hexagon;
 
@@ -175,6 +176,9 @@
 
                     // Add hexagon to cell polygons
                     cellPolygons[hexagon] = polygon;
+
+                    // Add polygon to cellsLayer
+                    cellsLayer.addLayer(polygon);
 
                     // Add hexagon to drawn cells
                     drawnCells.add(hexagon);
