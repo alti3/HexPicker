@@ -42,11 +42,20 @@ https://alti3.github.io/HexPicker/
 No installation is required. Simply clone the repository and open `index.html` in a web browser.
 
 ```bash
-git clone https://github.com/alti3/hexpicker.git
-cd leaflet-h3-map
+git clone https://github.com/alti3/HexPicker.git
+cd HexPicker
 open index.html
 ```
 
+## Using Docker
+Build and run the docker image with the following commands:
+
+```bash
+docker build -t hexpicker .
+docker run -p 8080:80 hexpicker
+```
+
+Then open [http://localhost:8080](http://localhost:8080) in a web browser.
 
 ## Contributing
 

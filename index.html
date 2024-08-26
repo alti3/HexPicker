@@ -10,7 +10,7 @@
     <!-- Include Leaflet Draw CSS -->
     <link rel="stylesheet" href="https://unpkg.com/leaflet-draw@1.0.4/dist/leaflet.draw.css" />
     <!-- Include H3 JavaScript library -->
-    <script src="https://unpkg.com/h3-js@3.7.2/dist/h3-js.umd.js"></script>
+    <script src="https://unpkg.com/h3-js@4.1.0/dist/h3-js.umd.js"></script>
     <style>
         /* Reset default margins and set full height and width */
         body,
@@ -116,26 +116,27 @@
 
         // Draw H3 cells on the map
         function drawH3Cells() {
-            // Get the map bounds
+            // Get the map bounds of the current view
             var bounds = map.getBounds();
             var nw = bounds.getNorthWest();
             var se = bounds.getSouthEast();
 
             // Get H3 hexagons within the map bounds
-            var hexagons = h3.polyfill([
-                [nw.lat, nw.lng], // North West
-                [se.lat, nw.lng], // North East
-                [se.lat, se.lng], // South East
-                [nw.lat, se.lng] // South West
-            ],
-                h3Resolution // Resolution level
+            var hexagons = h3.polygonToCells(
+                [
+                    [nw.lat, nw.lng], // North West
+                    [se.lat, nw.lng], // North East
+                    [se.lat, se.lng], // South East
+                    [nw.lat, se.lng] // South West
+                ],
+                h3Resolution // H3 cell resolution level
             );
 
             hexagons.forEach(function (hexagon) {
                 // Check if the hexagon has already been drawn
                 if (!drawnCells.has(hexagon)) {
                     // Convert H3 hexagon to polygon coordinates
-                    var polygonCoords = h3.h3ToGeoBoundary(hexagon);
+                    var polygonCoords = h3.cellToBoundary(hexagon);
                     var leafletCoords = polygonCoords.map(function (coord) {
                         return [coord[0], coord[1]];
                     });
@@ -242,7 +243,7 @@
             });
 
             // Get H3 indexes within the polygon
-            var hexagons = h3.polyfill(h3Polygon, 8);
+            var hexagons = h3.polygonToCells(h3Polygon, 8);
 
             // Select all cells within the polygon
             hexagons.forEach(function (hexagon) {
