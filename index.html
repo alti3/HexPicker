@@ -27,45 +27,47 @@
             width: 100%;
         }
 
-        /* Style for draw, copy, and clear buttons */
-        #drawButton,
-        #copyButton,
-        #clearButton {
+        /* Card container for buttons and hexagon counter */
+        .card {
             position: absolute;
             top: 10px;
-            z-index: 1000;
-            padding: 10px;
+            right: 10px;
             background-color: white;
             border: 1px solid #ccc;
+            border-radius: 8px;
+            box-shadow: 0 2px 8px rgba(0, 0, 0, 0.2);
+            padding: 15px;
+            z-index: 1000;
+            display: flex;
+            flex-direction: column;
+            gap: 10px;
+            width: 250px;
+        }
+
+        /* Style for buttons within the card */
+        .card button {
+            padding: 10px;
+            background-color: #007bff;
+            color: white;
+            border: none;
             border-radius: 4px;
             cursor: pointer;
+            font-size: 14px;
         }
 
-        /* Position draw button */
-        #drawButton {
-            right: 10px;
+        .card button:disabled {
+            background-color: #cccccc;
+            cursor: not-allowed;
         }
 
-        /* Position copy button */
-        #copyButton {
-            right: 150px;
-        }
-
-        /* Position clear button */
-        #clearButton {
-            right: 290px;
-        }
-
-        /* Style for hexagon counter */
+        /* Style for the hexagon counter */
         #hexagonCounter {
-            position: absolute;
-            top: 10px;
-            right: 430px;
-            z-index: 1000;
             padding: 10px;
-            background-color: white;
+            background-color: #f8f9fa;
             border: 1px solid #ccc;
             border-radius: 4px;
+            text-align: center;
+            font-weight: bold;
         }
     </style>
 </head>
@@ -73,15 +75,19 @@
 <body>
     <!-- Map container -->
     <div id="map"></div>
-    <!-- Draw polygon button -->
-    <button id="drawButton">Draw Polygon</button>
-    <!-- Copy cell IDs button -->
-    <button id="copyButton">Copy Cell IDs</button>
-    <!-- Clear selected cells button -->
-    <button id="clearButton">Clear Selected</button>
-    <!-- Hexagon counter display -->
-    <div id="hexagonCounter">Selected Hexagons: 0</div>
-
+    <!-- Card container for buttons and hexagon counter -->
+    <div class="card">
+        <!-- Draw polygon button -->
+        <button id="drawButton">Draw Polygon</button>
+        <!-- Clear selected cells button -->
+        <button id="clearButton">Clear Selected</button>
+        <!-- Copy selected cell IDs button -->
+        <button id="copyButton" disabled>Copy Selected Cell IDs</button>
+        <!-- Copy selected polygon button -->
+        <button id="copyPolygonButton" disabled>Copy Selected Polygon</button>
+        <!-- Hexagon counter display -->
+        <div id="hexagonCounter">Selected Hexagons: 0</div>
+    </div>
     <!-- Include Leaflet JavaScript -->
     <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
     <!-- Include Leaflet Draw JavaScript -->
@@ -97,6 +103,7 @@
         var hexagonCounter = document.getElementById('hexagonCounter');
         var copyButton = document.getElementById('copyButton');
         var clearButton = document.getElementById('clearButton');
+        var copyPolygonButton = document.getElementById('copyPolygonButton');
 
         // Initialize the map centered on Tripoli, Libya
         var map = L.map('map').setView(centerCoordinates, 13);
@@ -112,6 +119,8 @@
         // Update the hexagon counter display
         function updateHexagonCounter() {
             hexagonCounter.textContent = 'Selected Hexagons: ' + selectedCells.size;
+            copyPolygonButton.disabled = selectedCells.size === 0;
+            copyButton.disabled = selectedCells.size === 0; // Disable copy button if no selected cells
         }
 
         // Draw H3 cells on the map
@@ -290,6 +299,38 @@
             updateHexagonCounter();
             console.log('All cells cleared');
         });
+
+        // Convert selected cells to GeoJSON FeatureCollection and copy to clipboard
+        function copySelectedPolygon() {
+            const hexagons = Array.from(selectedCells);
+            const multiPolygonH3 = h3.cellsToMultiPolygon(hexagons, true);
+
+            // Construct GeoJSON FeatureCollection with proper geometry objects
+            const geoJson = {
+                type: "FeatureCollection",
+                features: multiPolygonH3.map((polygon) => ({
+                    type: "Feature",
+                    geometry: {
+                        type: "Polygon",
+                        coordinates: polygon
+                    },
+                    properties: {}
+                }))
+            };
+
+            const geoJsonString = JSON.stringify(geoJson, null, 2); // Pretty-print with 2-space indentation
+
+            navigator.clipboard.writeText(geoJsonString)
+                .then(() => {
+                    alert('GeoJSON copied to clipboard!');
+                })
+                .catch((err) => {
+                    console.error('Could not copy GeoJSON: ', err);
+                });
+        }
+
+        // Add click event listener to copy polygon button
+        copyPolygonButton.addEventListener('click', copySelectedPolygon);
 
         // Redraw cells when map moves
         map.on('moveend', drawH3Cells);
