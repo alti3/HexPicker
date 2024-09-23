@@ -17,6 +17,7 @@ https://alti3.github.io/HexPicker/
 - Ability to select individual cells by clicking
 - Draw polygon tool to select multiple cells at once
 - Copy selected cell IDs to clipboard
+- Copy selected polygon GeoJSON to clipboard (try visiting [geojson.io](https://geojson.io/) and pasting the clipboard content)
 - Clear all selected cells
 - Real-time counter for selected hexagons
 

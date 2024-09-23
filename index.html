@@ -80,11 +80,11 @@
         <!-- Draw polygon button -->
         <button id="drawButton">Draw Polygon</button>
         <!-- Clear selected cells button -->
-        <button id="clearButton">Clear Selected</button>
+        <button id="clearButton" disabled>Clear Selected</button>
         <!-- Copy selected cell IDs button -->
-        <button id="copyButton" disabled>Copy Selected Cell IDs</button>
+        <button id="copyButton" disabled>Copy Selected Cells IDs</button>
         <!-- Copy selected polygon button -->
-        <button id="copyPolygonButton" disabled>Copy Selected Polygon</button>
+        <button id="copyPolygonButton" disabled>Copy Selected Polygon GeoJSON</button>
         <!-- Hexagon counter display -->
         <div id="hexagonCounter">Selected Hexagons: 0</div>
     </div>
@@ -121,6 +121,7 @@
             hexagonCounter.textContent = 'Selected Hexagons: ' + selectedCells.size;
             copyPolygonButton.disabled = selectedCells.size === 0;
             copyButton.disabled = selectedCells.size === 0; // Disable copy button if no selected cells
+            clearButton.disabled = selectedCells.size === 0; // Disable clear button if no selected cells
         }
 
         // Draw H3 cells on the map
