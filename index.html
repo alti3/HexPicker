@@ -271,8 +271,8 @@
                 return [coord[1], coord[0]]; // Swap lat and lng
             });
 
-            // Get H3 indexes within the polygon
-            var hexagons = h3.polygonToCells(h3Polygon, 8);
+            // Get H3 indexes within the polygon using current resolution
+            var hexagons = h3.polygonToCells(h3Polygon, h3Resolution);
 
             // Select all cells within the polygon
             hexagons.forEach(function (hexagon) {
