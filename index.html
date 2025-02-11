@@ -357,25 +357,36 @@
         // Initial cell drawing
         drawH3Cells();
 
-        // Add resolution select handler
+        // Add event listener for resolution dropdown changes
         var resolutionSelect = document.getElementById('resolutionSelect');
         
         resolutionSelect.addEventListener('change', function() {
+            // Check if there are any selected cells that would be lost
             if (selectedCells.size > 0) {
+                // Prompt user for confirmation since changing resolution will clear selections
                 if (confirm('Changing resolution will clear all selected cells. Do you want to continue?')) {
+                    // User confirmed - clear existing selections
                     clearAllCells();
+                    // Update to new resolution
                     h3Resolution = parseInt(this.value);
+                    // Clear all cells from the map
                     cellsLayer.clearLayers();
+                    // Reset the set tracking drawn cells
                     drawnCells.clear();
+                    // Redraw cells at new resolution
                     drawH3Cells();
                 } else {
-                    // Reset dropdown to previous value
+                    // User cancelled - revert dropdown to previous value
                     this.value = h3Resolution;
                 }
             } else {
+                // No selected cells, safe to change resolution without confirmation
                 h3Resolution = parseInt(this.value);
+                // Clear existing cells
                 cellsLayer.clearLayers();
+                // Reset tracking of drawn cells
                 drawnCells.clear();
+                // Draw new cells at updated resolution
                 drawH3Cells();
             }
         });
