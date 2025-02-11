@@ -77,6 +77,25 @@
     <div id="map"></div>
     <!-- Card container for buttons and hexagon counter -->
     <div class="card">
+        <!-- Add resolution dropdown -->
+        <select id="resolutionSelect" style="padding: 8px; border-radius: 4px; border: 1px solid #ccc;">
+            <option value="0">Resolution: 0</option>
+            <option value="1">Resolution: 1</option>
+            <option value="2">Resolution: 2</option>
+            <option value="3">Resolution: 3</option>
+            <option value="4">Resolution: 4</option>
+            <option value="5">Resolution: 5</option>
+            <option value="6">Resolution: 6</option>
+            <option value="7">Resolution: 7</option>
+            <option value="8" selected>Resolution: 8</option>
+            <option value="9">Resolution: 9</option>
+            <option value="10">Resolution: 10</option>
+            <option value="11">Resolution: 11</option>
+            <option value="12">Resolution: 12</option>
+            <option value="13">Resolution: 13</option>
+            <option value="14">Resolution: 14</option>
+            <option value="15">Resolution: 15</option>
+        </select>
         <!-- Draw polygon button -->
         <button id="drawButton">Draw Polygon</button>
         <!-- Clear selected cells button -->
@@ -337,6 +356,43 @@
         map.on('moveend', drawH3Cells);
         // Initial cell drawing
         drawH3Cells();
+
+        // Add resolution select handler
+        var resolutionSelect = document.getElementById('resolutionSelect');
+        
+        resolutionSelect.addEventListener('change', function() {
+            if (selectedCells.size > 0) {
+                if (confirm('Changing resolution will clear all selected cells. Do you want to continue?')) {
+                    clearAllCells();
+                    h3Resolution = parseInt(this.value);
+                    cellsLayer.clearLayers();
+                    drawnCells.clear();
+                    drawH3Cells();
+                } else {
+                    // Reset dropdown to previous value
+                    this.value = h3Resolution;
+                }
+            } else {
+                h3Resolution = parseInt(this.value);
+                cellsLayer.clearLayers();
+                drawnCells.clear();
+                drawH3Cells();
+            }
+        });
+
+        // Helper function to clear all cells
+        function clearAllCells() {
+            selectedCells.forEach(function (hexagon) {
+                if (cellPolygons[hexagon]) {
+                    cellPolygons[hexagon].setStyle({
+                        fillOpacity: 0
+                    });
+                }
+            });
+            selectedCells.clear();
+            updateHexagonCounter();
+            cellPolygons = {};
+        }
     </script>
 </body>
 
