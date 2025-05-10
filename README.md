@@ -1,67 +1,87 @@
-# Leaflet Map with H3 Cells
+# Hex Picker – Leaflet × H3
 
-This project demonstrates an interactive web map using Leaflet.js and the H3 geospatial indexing system. The map allows users to visualize, select, and interact with H3 hexagonal cells.
+Interactive web map for drawing **non‑overlapping, color‑coded zones** on an H3 hexagonal grid.
+
 
 ## Live demo
-You can try the live demo [here](https://alti3.github.io/HexPicker/).
+👉 [Try it on GitHub Pages](https://alti3.github.io/HexPicker/)
 
-https://alti3.github.io/HexPicker/
 
 ## Screenshot
-![alt text](image.png)
+
+
+![Hex Picker screenshot](image.png)
+
+---
 
 ## Features
 
-- Interactive map centered on user-defined coordinates (default: Tripoli, Libya)
-- Display of H3 hexagonal cells (default resolution: 8)
-- Ability to select individual cells by clicking
-- Draw polygon tool to select multiple cells at once
-- Copy selected cell IDs to clipboard
-- Copy selected polygon GeoJSON to clipboard (try visiting [geojson.io](https://geojson.io/) and pasting the clipboard content)
-- Clear all selected cells
-- Real-time counter for selected hexagons
+| Category                                                                               | Details                                                                                                                                            |
+| -------------------------------------------------------------------------------------- | -------------------------------------------------------------------------------------------------------------------------------------------------- |
+| **Grid & view**                                                                        | Leaflet map with on‑the‑fly H3 tessellation (default resolution 8, changeable up to 15).                                                           |
+| **Selection**                                                                          | Click individual hexes or draw a polygon to bulk‑select free (un‑assigned) cells. Live counter shows how many cells are in the working selection.  |
+| **Zones**                                                                              |                                                                                                                                                    |
+| • Create zones from a selection – user picks **unique name & #hex color** (validated). |                                                                                                                                                    |
+| • Zones never overlap – a hexagon can belong to one zone only.                         |                                                                                                                                                    |
+| • Edit mode: add/remove hexes inside a zone.                                           |                                                                                                                                                    |
+| • Change zone color anytime by clicking the color swatch.                              |                                                                                                                                                    |
+| • Delete zones.                                                                        |                                                                                                                                                    |
+| **Styling**                                                                            | Zone interiors fill with chosen color; a bold outline is generated from `h3.cellsToMultiPolygon`, so only the outer/inner perimeter is emphasized. |
+| **Export**                                                                             | One‑click clipboard copy:                                                                                                                          |
+| `Copy Zones Cells IDs` → JSON array `[{zone_name, zone_color, zone_cells:[...]}, …]`   |                                                                                                                                                    |
+| `Copy Zones GeoJSON` → FeatureCollection (MultiPolygon per zone).                      |                                                                                                                                                    |
+| **Other UI**                                                                           | Resolution switcher (prompts before clearing data).                                                                                                |
+| Clear current working selection.                                                       |                                                                                                                                                    |
 
-## Technologies Used
+---
 
-- HTML5
-- CSS3
-- JavaScript
-- [Leaflet.js](https://leafletjs.com/) for map rendering
-- [Leaflet.draw](https://leaflet.github.io/Leaflet.draw/docs/leaflet-draw-latest.html) for polygon drawing functionality
-- [H3-js](https://github.com/uber/h3-js) for H3 geospatial indexing
+## Tech stack
+
+* **HTML / CSS / JavaScript** (vanilla)
+* [Leaflet](https://leafletjs.com/) – map rendering
+* [Leaflet.draw](https://leaflet.github.io/Leaflet.draw/) – free‑hand polygon tool
+* [H3‑js](https://github.com/uber/h3-js) – geospatial indexing & polygon utilities
+
+---
 
 ## Usage
 
-1. Open `index.html` in a web browser to view the map.
-2. Click on individual hexagons to select/deselect them.
-3. Use the "Draw Polygon" button to select multiple hexagons at once.
-4. Click "Copy Cell IDs" to copy the selected cell IDs to your clipboard.
-5. Use "Clear Selected" to deselect all hexagons.
+1. **Select hexes**
+   *Single click* or **Draw Polygon** to build a working selection.
+2. **Create Zone**
+   Click **Create Zone …** – enter a unique name and #RRGGBB color.
+3. **Edit zone**
+   Press **Edit** next to a zone, then click hexes to add/remove. **Finish Editing** to save.
+4. **Change color**
+   Click the zone’s color swatch, enter a new *unique* #hex.
+5. **Delete zone**  ✕ button.
+6. **Export**  Use **Copy Zones Cells IDs** or **Copy Zones GeoJSON** and paste where needed (e.g. [geojson.io](https://geojson.io/)).
 
-## Installation
+> **Tip:** Changing the H3 resolution clears all zones – you’ll be prompted first.
 
-No installation is required. Simply clone the repository and open `index.html` in a web browser.
+---
+
+### Local development
 
 ```bash
 git clone https://github.com/alti3/HexPicker.git
 cd HexPicker
-open index.html
+# open index.html in your favourite browser
 ```
 
-## Using Docker
-Build and run the docker image with the following commands:
+### Docker
 
 ```bash
 docker build -t hexpicker .
 docker run -p 8080:80 hexpicker
 ```
 
-Then open [http://localhost:8080](http://localhost:8080) in a web browser.
+Then visit [http://localhost:8080](http://localhost:8080).
+
+---
 
 ## Contributing
-
-Contributions are welcome! Please feel free to submit a Pull Request.
+Pull requests and issues are welcome! Please keep PRs focused and include screenshots/GIFs where relevant.
 
 ## License
-
-This project is open source and available under the [MIT License](LICENSE).
+[MIT](LICENSE)

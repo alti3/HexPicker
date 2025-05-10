@@ -4,235 +4,333 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Hex Picker - Leaflet Map with H3 Cells picker</title>
-    <!-- Include Leaflet CSS -->
+    <title>Hex Picker with Zones</title>
+    <!-- Leaflet CSS -->
     <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
-    <!-- Include Leaflet Draw CSS -->
+    <!-- Leaflet Draw CSS -->
     <link rel="stylesheet" href="https://unpkg.com/leaflet-draw@1.0.4/dist/leaflet.draw.css" />
-    <!-- Include H3 JavaScript library -->
+    <!-- H3 -->
     <script src="https://unpkg.com/h3-js@4.1.0/dist/h3-js.umd.js"></script>
+
     <style>
-        /* Reset default margins and set full height and width */
-        body,
-        html {
+        html,
+        body {
+            width: 100%;
+            height: 100%;
             margin: 0;
-            padding: 0;
-            height: 100%;
-            width: 100%;
         }
 
-        /* Set map container to full height and width */
         #map {
-            height: 100%;
             width: 100%;
+            height: 100%;
         }
 
-        /* Card container for buttons and hexagon counter */
         .card {
             position: absolute;
             top: 10px;
             right: 10px;
-            background-color: white;
+            z-index: 1000;
+            background: #fff;
             border: 1px solid #ccc;
             border-radius: 8px;
-            box-shadow: 0 2px 8px rgba(0, 0, 0, 0.2);
-            padding: 15px;
-            z-index: 1000;
+            box-shadow: 0 2px 8px rgba(0, 0, 0, 0.15);
+            padding: 14px;
+            width: 280px;
             display: flex;
             flex-direction: column;
-            gap: 10px;
-            width: 250px;
+            gap: 8px;
         }
 
-        /* Style for buttons within the card */
-        .card button {
-            padding: 10px;
-            background-color: #007bff;
-            color: white;
-            border: none;
-            border-radius: 4px;
-            cursor: pointer;
+        .card button,
+        .card select {
+            padding: 8px;
             font-size: 14px;
+            border-radius: 4px;
+            border: 1px solid #ccc;
+        }
+
+        .card button {
+            background: #007bff;
+            color: #fff;
+            border: none;
+            cursor: pointer;
         }
 
         .card button:disabled {
-            background-color: #cccccc;
+            background: #ccc;
             cursor: not-allowed;
         }
 
-        /* Style for the hexagon counter */
-        #hexagonCounter {
-            padding: 10px;
-            background-color: #f8f9fa;
-            border: 1px solid #ccc;
+        #zonesContainer {
+            max-height: 240px;
+            overflow-y: auto;
+            border: 1px solid #eee;
+            padding: 4px;
             border-radius: 4px;
-            text-align: center;
-            font-weight: bold;
+        }
+
+        .zone-item {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            margin: 4px 0;
+        }
+
+        .zone-left {
+            display: flex;
+            align-items: center;
+            gap: 6px;
+        }
+
+        .color-swatch {
+            width: 14px;
+            height: 14px;
+            border-radius: 2px;
+            cursor: pointer;
+            border: 1px solid #999;
+        }
+
+        .delete-btn {
+            background: #dc3545;
+            color: #fff;
         }
     </style>
 </head>
 
 <body>
-    <!-- Map container -->
     <div id="map"></div>
-    <!-- Card container for buttons and hexagon counter -->
+
     <div class="card">
-        <!-- Add resolution dropdown -->
-        <select id="resolutionSelect" style="padding: 8px; border-radius: 4px; border: 1px solid #ccc;">
-            <option value="0">Resolution: 0</option>
-            <option value="1">Resolution: 1</option>
-            <option value="2">Resolution: 2</option>
-            <option value="3">Resolution: 3</option>
-            <option value="4">Resolution: 4</option>
-            <option value="5">Resolution: 5</option>
-            <option value="6">Resolution: 6</option>
-            <option value="7">Resolution: 7</option>
-            <option value="8" selected>Resolution: 8</option>
-            <option value="9">Resolution: 9</option>
-            <option value="10">Resolution: 10</option>
-            <option value="11">Resolution: 11</option>
-            <option value="12">Resolution: 12</option>
-            <option value="13">Resolution: 13</option>
-            <option value="14">Resolution: 14</option>
-            <option value="15">Resolution: 15</option>
-        </select>
-        <!-- Draw polygon button -->
+        <select id="resolutionSelect"></select>
+
         <button id="drawButton">Draw Polygon</button>
-        <!-- Clear selected cells button -->
         <button id="clearButton" disabled>Clear Selected</button>
-        <!-- Copy selected cell IDs button -->
-        <button id="copyButton" disabled>Copy Selected Cells IDs</button>
-        <!-- Copy selected polygon button -->
-        <button id="copyPolygonButton" disabled>Copy Selected Polygon GeoJSON</button>
-        <!-- Hexagon counter display -->
+        <button id="createZoneButton" disabled>Create Zone from Selection</button>
+        <button id="finishEditButton" style="display:none;background:#28a745;">Finish Editing</button>
+
+        <button id="copyIdsButton" disabled>Copy Zones Cells IDs</button>
+        <button id="copyGeoButton" disabled>Copy Zones GeoJSON</button>
+
         <div id="hexagonCounter">Selected Hexagons: 0</div>
+        <hr>
+        <strong>Zones</strong>
+        <div id="zonesContainer"></div>
     </div>
-    <!-- Include Leaflet JavaScript -->
+
+    <!-- Leaflet & Draw JS -->
     <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
-    <!-- Include Leaflet Draw JavaScript -->
     <script src="https://unpkg.com/leaflet-draw@1.0.4/dist/leaflet.draw.js"></script>
     <script>
+        /*************************************************
+         * Globals & helpers
+         *************************************************/
+        const DEFAULT_RESOLUTION = 8;
+        const MAP_CENTER = [32.85, 13.1913];
+        const HEX_COLOR_REGEX = /^#(?:[0-9a-fA-F]{3}|[0-9a-fA-F]{6}|[0-9a-fA-F]{8})$/;
 
-        // Initialize variables
-        var h3Resolution = 8; // Default h3 cell resolution: 8
-        var centerCoordinates = [32.85, 13.1913]; // Default center: Tripoli, Libya
-        var drawnCells = new Set();
-        var selectedCells = new Set();
-        var cellPolygons = {};
-        var hexagonCounter = document.getElementById('hexagonCounter');
-        var copyButton = document.getElementById('copyButton');
-        var clearButton = document.getElementById('clearButton');
-        var copyPolygonButton = document.getElementById('copyPolygonButton');
+        let h3Resolution = DEFAULT_RESOLUTION;
 
-        // Initialize the map centered on Tripoli, Libya
-        var map = L.map('map').setView(centerCoordinates, 13);
-
-        // Add OpenStreetMap tile layer
+        const map = L.map('map').setView(MAP_CENTER, 13);
         L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
-            attribution: '&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors'
+            attribution: '&copy; OpenStreetMap contributors'
         }).addTo(map);
 
-        // Create a layer group for the cells
-        var cellsLayer = L.layerGroup().addTo(map);
+        // Layers
+        const cellsLayer = L.layerGroup().addTo(map);
+        const zoneOutlinesLayer = L.layerGroup().addTo(map); // holds bold outlines only
 
-        // Update the hexagon counter display
-        function updateHexagonCounter() {
-            hexagonCounter.textContent = 'Selected Hexagons: ' + selectedCells.size;
-            copyPolygonButton.disabled = selectedCells.size === 0;
-            copyButton.disabled = selectedCells.size === 0; // Disable copy button if no selected cells
-            clearButton.disabled = selectedCells.size === 0; // Disable clear button if no selected cells
+        // Data stores
+        let drawnCells = new Set();               // cells currently rendered
+        let cellPolygons = {};                    // h3Index -> polygon instance
+        let selectedCells = new Set();            // working selection set
+
+        let zones = [];                           // list of zone objects
+        let hexToZone = {};                       // h3Index -> zoneId
+        let editingZoneId = null;                 // zone being edited, or null
+        let zoneCounter = 0;                      // incremental id for zones
+
+        /*************************************************
+         * DOM refs
+         *************************************************/
+        const drawButton = document.getElementById('drawButton');
+        const clearButton = document.getElementById('clearButton');
+        const createZoneButton = document.getElementById('createZoneButton');
+        const finishEditButton = document.getElementById('finishEditButton');
+        const copyIdsButton = document.getElementById('copyIdsButton');
+        const copyGeoButton = document.getElementById('copyGeoButton');
+        const resolutionSelect = document.getElementById('resolutionSelect');
+        const hexagonCounter = document.getElementById('hexagonCounter');
+        const zonesContainer = document.getElementById('zonesContainer');
+
+        // Populate resolution dropdown
+        for (let r = 0; r <= 15; r++) {
+            const opt = document.createElement('option');
+            opt.value = r.toString();
+            opt.textContent = `Resolution ${r}`;
+            if (r === DEFAULT_RESOLUTION) opt.selected = true;
+            resolutionSelect.appendChild(opt);
         }
 
-        // Draw H3 cells on the map
+        function isValidHexColor(c) {
+            return HEX_COLOR_REGEX.test(c);
+        }
+
+        /*************************************************
+         * Utility UI functions
+         *************************************************/
+        function updateHexagonCounter() {
+            hexagonCounter.textContent = `Selected Hexagons: ${selectedCells.size}`;
+            clearButton.disabled = selectedCells.size === 0;
+            createZoneButton.disabled = selectedCells.size === 0;
+        }
+
+        function updateCopyButtons() {
+            const disabled = zones.length === 0;
+            copyIdsButton.disabled = disabled;
+            copyGeoButton.disabled = disabled;
+        }
+
+        function renderZonesList() {
+            zonesContainer.innerHTML = '';
+            zones.forEach((z) => {
+                const item = document.createElement('div');
+                item.className = 'zone-item';
+
+                const left = document.createElement('div');
+                left.className = 'zone-left';
+
+                const swatch = document.createElement('span');
+                swatch.className = 'color-swatch';
+                swatch.style.background = z.color;
+                swatch.title = 'Click to change color';
+                swatch.addEventListener('click', () => changeZoneColor(z.id));
+
+                const nameSpan = document.createElement('span');
+                nameSpan.textContent = z.name;
+
+                left.appendChild(swatch);
+                left.appendChild(nameSpan);
+
+                const editBtn = document.createElement('button');
+                editBtn.textContent = editingZoneId === z.id ? 'Editing…' : 'Edit';
+                editBtn.style.background = editingZoneId === z.id ? '#ffc107' : '#17a2b8';
+                editBtn.disabled = editingZoneId !== null && editingZoneId !== z.id;
+                editBtn.addEventListener('click', () => toggleEditZone(z.id));
+
+                const deleteBtn = document.createElement('button');
+                deleteBtn.textContent = '✕';
+                deleteBtn.className = 'delete-btn';
+                deleteBtn.disabled = editingZoneId !== null;
+                deleteBtn.addEventListener('click', () => deleteZone(z.id));
+
+                const right = document.createElement('div');
+                right.style.display = 'flex';
+                right.style.gap = '4px';
+                right.appendChild(editBtn);
+                right.appendChild(deleteBtn);
+
+                item.appendChild(left);
+                item.appendChild(right);
+                zonesContainer.appendChild(item);
+            });
+            updateCopyButtons();
+        }
+
+        /*************************************************
+         * Grid drawing
+         *************************************************/
         function drawH3Cells() {
-            // Get the map bounds of the current view
-            var bounds = map.getBounds();
-            var nw = bounds.getNorthWest();
-            var se = bounds.getSouthEast();
+            const bounds = map.getBounds();
+            const nw = bounds.getNorthWest();
+            const se = bounds.getSouthEast();
 
-            // Get H3 hexagons within the map bounds
-            var hexagons = h3.polygonToCells(
-                [
-                    [nw.lat, nw.lng], // North West
-                    [se.lat, nw.lng], // North East
-                    [se.lat, se.lng], // South East
-                    [nw.lat, se.lng] // South West
-                ],
-                h3Resolution // H3 cell resolution level
-            );
+            const hexagons = h3.polygonToCells([
+                [nw.lat, nw.lng],
+                [se.lat, nw.lng],
+                [se.lat, se.lng],
+                [nw.lat, se.lng]
+            ], h3Resolution);
 
-            hexagons.forEach(function (hexagon) {
-                // Check if the hexagon has already been drawn
-                if (!drawnCells.has(hexagon)) {
-                    // Convert H3 hexagon to polygon coordinates
-                    var polygonCoords = h3.cellToBoundary(hexagon);
-                    var leafletCoords = polygonCoords.map(function (coord) {
-                        return [coord[0], coord[1]];
-                    });
+            hexagons.forEach((hex) => {
+                if (drawnCells.has(hex)) return;
 
-                    // Create and add polygon to the cellsLayer
-                    var polygon = L.polygon(leafletCoords, {
-                        color: 'blue',
-                        weight: 1,
-                        fillOpacity: 0,
-                        fill: true
-                    });
+                const coords = h3.cellToBoundary(hex).map(([lat, lng]) => [lat, lng]);
+                const polygon = L.polygon(coords, {
+                    color: 'blue',
+                    weight: 1,
+                    fillOpacity: 0
+                });
+                polygon.h3Index = hex;
 
-                    polygon.h3Index = hexagon;
-
-                    // Add mouseover event
-                    polygon.on('mouseover', function (e) {
-                        if (!selectedCells.has(this.h3Index)) {
-                            // Set fill opacity to 0.3 for highlighted cells
-                            this.setStyle({
-                                fillOpacity: 0.3
-                            });
-                        }
-                    });
-
-                    // Add mouseout event
-                    polygon.on('mouseout', function (e) {
-                        if (!selectedCells.has(this.h3Index)) {
-                            // Set fill opacity to 0 for non-highlighted cells
-                            this.setStyle({
-                                fillOpacity: 0
-                            });
-                        }
-                    });
-
-                    // Add click event
-                    polygon.on('click', function (e) {
-                        if (selectedCells.has(this.h3Index)) {
-                            // Deselect the cell
-                            selectedCells.delete(this.h3Index);
-                            this.setStyle({
-                                fillOpacity: 0
-                            });
-                        } else {
-                            // Select the cell
-                            selectedCells.add(this.h3Index);
-                            this.setStyle({
-                                fillOpacity: 0.5
-                            });
-                        }
-                        updateHexagonCounter();
-                        console.log('Selected cells:', Array.from(selectedCells));
-                    });
-
-                    // Add hexagon to cell polygons
-                    cellPolygons[hexagon] = polygon;
-
-                    // Add polygon to cellsLayer
-                    cellsLayer.addLayer(polygon);
-
-                    // Add hexagon to drawn cells
-                    drawnCells.add(hexagon);
+                if (hexToZone[hex] !== undefined) {
+                    const zone = zones.find(z => z.id === hexToZone[hex]);
+                    if (zone) {
+                        applyZoneStyle(polygon, zone);
+                        polygon.inZone = true;
+                    }
                 }
+
+                polygon.on('mouseover', function () {
+                    if (this.inZone || editingZoneId !== null) return;
+                    if (!selectedCells.has(this.h3Index)) this.setStyle({ fillOpacity: 0.25 });
+                });
+
+                polygon.on('mouseout', function () {
+                    if (this.inZone || editingZoneId !== null) return;
+                    if (!selectedCells.has(this.h3Index)) this.setStyle({ fillOpacity: 0 });
+                });
+
+                polygon.on('click', function () {
+                    const hex = this.h3Index;
+
+                    if (editingZoneId !== null) {
+                        handleEditingClick(hex, this);
+                        return;
+                    }
+
+                    if (hexToZone[hex] !== undefined) {
+                        alert(`Hexagon already in zone "${zones.find(z => z.id === hexToZone[hex]).name}"`);
+                        return;
+                    }
+                    toggleSelection(hex, this);
+                });
+
+                cellPolygons[hex] = polygon;
+                cellsLayer.addLayer(polygon);
+                drawnCells.add(hex);
             });
         }
 
-        // Initialize Leaflet Draw control
-        var drawControl = new L.Control.Draw({
+        map.on('moveend', drawH3Cells);
+        drawH3Cells();
+
+        /*************************************************
+         * Selection helpers
+         *************************************************/
+        function toggleSelection(hex, polygon) {
+            if (selectedCells.has(hex)) {
+                selectedCells.delete(hex);
+                polygon.setStyle({ fillOpacity: 0 });
+            } else {
+                selectedCells.add(hex);
+                polygon.setStyle({ fillOpacity: 0.5 });
+            }
+            updateHexagonCounter();
+        }
+
+        function selectHex(hex) {
+            if (selectedCells.has(hex)) return;
+            const polygon = cellPolygons[hex];
+            if (!polygon) return;
+            selectedCells.add(hex);
+            polygon.setStyle({ fillOpacity: 0.5 });
+            updateHexagonCounter();
+        }
+
+        /*************************************************
+         * Leaflet‑draw selection polygon
+         *************************************************/
+        const drawControl = new L.Control.Draw({
             draw: {
                 polygon: true,
                 polyline: false,
@@ -242,167 +340,284 @@
                 circlemarker: false
             }
         });
+        let isDrawing = false;
 
-        var drawButton = document.getElementById('drawButton');
-        var isDrawing = false;
-
-        // Add click event listener to draw button
-        drawButton.addEventListener('click', function () {
-            if (!isDrawing) {
-                // Add drawing control
-                map.addControl(drawControl);
-                isDrawing = true;
-                drawButton.textContent = 'Cancel Drawing';
-            } else {
-                // Remove drawing control
+        drawButton.addEventListener('click', () => {
+            if (isDrawing) {
                 map.removeControl(drawControl);
-                isDrawing = false;
                 drawButton.textContent = 'Draw Polygon';
+                isDrawing = false;
+            } else {
+                if (editingZoneId !== null) return;
+                map.addControl(drawControl);
+                drawButton.textContent = 'Cancel Drawing';
+                isDrawing = true;
             }
         });
 
-        // Handle polygon creation event
-        map.on('draw:created', function (e) {
-            var layer = e.layer;
-            var drawnPolygon = layer.toGeoJSON().geometry.coordinates[0];
-
-            // Convert to H3 format
-            var h3Polygon = drawnPolygon.map(function (coord) {
-                return [coord[1], coord[0]]; // Swap lat and lng
+        map.on('draw:created', (e) => {
+            const layer = e.layer;
+            const poly = layer.toGeoJSON().geometry.coordinates[0].map(([lng, lat]) => [lat, lng]);
+            const hexagons = h3.polygonToCells(poly, h3Resolution);
+            hexagons.forEach((h) => {
+                if (hexToZone[h] !== undefined) return; // already assigned
+                selectHex(h);
             });
-
-            // Get H3 indexes within the polygon using current resolution
-            var hexagons = h3.polygonToCells(h3Polygon, h3Resolution);
-
-            // Select all cells within the polygon
-            hexagons.forEach(function (hexagon) {
-                if (cellPolygons[hexagon]) {
-                    if (!selectedCells.has(hexagon)) {
-                        selectedCells.add(hexagon);
-                        cellPolygons[hexagon].setStyle({
-                            fillOpacity: 0.5
-                        });
-                    }
-                }
-            });
-
-            // Update the hexagon counter display
-            updateHexagonCounter();
-            console.log('Selected cells:', selectedCells);
-
-            // Remove drawing control after polygon is created
             map.removeControl(drawControl);
-            isDrawing = false;
             drawButton.textContent = 'Draw Polygon';
+            isDrawing = false;
         });
 
-        // Add click event listener to copy button
-        copyButton.addEventListener('click', function () {
-            var cellIdsString = Array.from(selectedCells).join(',');
-            navigator.clipboard.writeText(cellIdsString).then(function () {
-                alert('Cell IDs copied to clipboard!');
-            }, function (err) {
-                console.error('Could not copy text: ', err);
-            });
-        });
+        /*************************************************
+         * Zone functions
+         *************************************************/
+        createZoneButton.addEventListener('click', () => {
+            if (selectedCells.size === 0) return;
+            const name = prompt('Zone name:');
+            if (!name) return;
+            if (zones.some(z => z.name.toLowerCase() === name.toLowerCase())) {
+                alert('Zone name must be unique.');
+                return;
+            }
 
-        // Add click event listener to clear button
-        clearButton.addEventListener('click', function () {
-            selectedCells.forEach(function (hexagon) {
-                if (cellPolygons[hexagon]) {
-                    cellPolygons[hexagon].setStyle({
-                        fillOpacity: 0
-                    });
-                }
-            });
-            selectedCells.clear();
-            updateHexagonCounter();
-            console.log('All cells cleared');
-        });
+            const color = prompt('Zone color (#RRGGBB or #RGB):', '#ff0000');
+            if (!color) return;
+            if (!isValidHexColor(color)) {
+                alert('Color must be a valid hex code starting with #.');
+                return;
+            }
+            if (zones.some(z => z.color.toLowerCase() === color.toLowerCase())) {
+                alert('Zone color must be unique.');
+                return;
+            }
 
-        // Convert selected cells to GeoJSON FeatureCollection and copy to clipboard
-        function copySelectedPolygon() {
-            const hexagons = Array.from(selectedCells);
-            const multiPolygonH3 = h3.cellsToMultiPolygon(hexagons, true);
+            // overlap check
+            const overlap = Array.from(selectedCells).filter(h => hexToZone[h] !== undefined);
+            if (overlap.length) {
+                alert('Some selected hexagons are already assigned to zones.');
+                return;
+            }
 
-            // Construct GeoJSON FeatureCollection with proper geometry objects
-            const geoJson = {
-                type: "FeatureCollection",
-                features: multiPolygonH3.map((polygon) => ({
-                    type: "Feature",
-                    geometry: {
-                        type: "Polygon",
-                        coordinates: polygon
-                    },
-                    properties: {}
-                }))
+            const zone = {
+                id: zoneCounter++,
+                name,
+                color,
+                hexagons: new Set(selectedCells),
+                outlinePolys: []
             };
 
-            const geoJsonString = JSON.stringify(geoJson, null, 2); // Pretty-print with 2-space indentation
-
-            navigator.clipboard.writeText(geoJsonString)
-                .then(() => {
-                    alert('GeoJSON copied to clipboard!');
-                })
-                .catch((err) => {
-                    console.error('Could not copy GeoJSON: ', err);
-                });
-        }
-
-        // Add click event listener to copy polygon button
-        copyPolygonButton.addEventListener('click', copySelectedPolygon);
-
-        // Redraw cells when map moves
-        map.on('moveend', drawH3Cells);
-        // Initial cell drawing
-        drawH3Cells();
-
-        // Add event listener for resolution dropdown changes
-        var resolutionSelect = document.getElementById('resolutionSelect');
-
-        resolutionSelect.addEventListener('change', function () {
-            // Check if there are any selected cells that would be lost
-            if (selectedCells.size > 0) {
-                // Prompt user for confirmation since changing resolution will clear selections
-                if (confirm('Changing resolution will clear all selected cells. Do you want to continue?')) {
-                    // User confirmed - clear existing selections
-                    clearAllCells();
-                    // Update to new resolution
-                    h3Resolution = parseInt(this.value);
-                    // Clear all cells from the map
-                    cellsLayer.clearLayers();
-                    // Reset the set tracking drawn cells
-                    drawnCells.clear();
-                    // Redraw cells at new resolution
-                    drawH3Cells();
-                } else {
-                    // User cancelled - revert dropdown to previous value
-                    this.value = h3Resolution;
+            zones.push(zone);
+            zone.hexagons.forEach(hex => {
+                hexToZone[hex] = zone.id;
+                const poly = cellPolygons[hex];
+                if (poly) {
+                    applyZoneStyle(poly, zone);
+                    poly.inZone = true;
                 }
-            } else {
-                // No selected cells, safe to change resolution without confirmation
-                h3Resolution = parseInt(this.value);
-                // Clear existing cells
-                cellsLayer.clearLayers();
-                // Reset tracking of drawn cells
-                drawnCells.clear();
-                // Draw new cells at updated resolution
-                drawH3Cells();
-            }
+            });
+            drawZoneOutline(zone);
+
+            selectedCells.clear();
+            updateHexagonCounter();
+            renderZonesList();
         });
 
-        // Helper function to clear all cells
-        function clearAllCells() {
-            selectedCells.forEach(function (hexagon) {
-                if (cellPolygons[hexagon]) {
-                    cellPolygons[hexagon].setStyle({
-                        fillOpacity: 0
-                    });
-                }
+        clearButton.addEventListener('click', () => {
+            selectedCells.forEach(hex => {
+                const poly = cellPolygons[hex];
+                if (poly) poly.setStyle({ fillOpacity: 0 });
             });
             selectedCells.clear();
             updateHexagonCounter();
+        });
+
+        function applyZoneStyle(polygon, zone) {
+            polygon.setStyle({
+                fillOpacity: 0.5,
+                fillColor: zone.color,
+                color: zone.color,
+                weight: 1
+            });
+        }
+
+        // Draw/refresh bold outline for a zone using cellsToMultiPolygon
+        function drawZoneOutline(zone) {
+            // Remove old outline(s)
+            if (zone.outlinePolys && zone.outlinePolys.length) {
+                zone.outlinePolys.forEach(p => zoneOutlinesLayer.removeLayer(p));
+            }
+            zone.outlinePolys = [];
+
+            const multi = h3.cellsToMultiPolygon(Array.from(zone.hexagons), true);
+            multi.forEach(poly => {
+                const latlngs = poly.map(ring => ring.map(([lat, lng]) => [lat, lng]));
+                const outline = L.polygon(latlngs, {
+                    color: zone.color,
+                    weight: 3,
+                    fillOpacity: 0,
+                    interactive: false
+                });
+                zoneOutlinesLayer.addLayer(outline);
+                zone.outlinePolys.push(outline);
+            });
+        }
+
+        // Change zone color
+        function changeZoneColor(zoneId) {
+            const zone = zones.find(z => z.id === zoneId);
+            if (!zone) return;
+            const newColor = prompt('New color (#RRGGBB or #RGB):', zone.color);
+            if (!newColor || newColor.toLowerCase() === zone.color.toLowerCase()) return;
+            if (!isValidHexColor(newColor)) {
+                alert('Color must be a valid hex code starting with #.');
+                return;
+            }
+            if (zones.some(z => z.color.toLowerCase() === newColor.toLowerCase())) {
+                alert('Zone color must be unique.');
+                return;
+            }
+            zone.color = newColor;
+            // Update swatch and hex styles
+            zone.hexagons.forEach(hex => {
+                const poly = cellPolygons[hex];
+                if (poly) applyZoneStyle(poly, zone);
+            });
+            drawZoneOutline(zone);
+            renderZonesList();
+        }
+
+        function toggleEditZone(zoneId) {
+            if (editingZoneId === zoneId) {
+                finishEditing();
+                return;
+            }
+            if (editingZoneId !== null) return; // another edit in progress
+            editingZoneId = zoneId;
+            drawButton.disabled = true;
+            resolutionSelect.disabled = true;
+            finishEditButton.style.display = 'block';
+            renderZonesList();
+        }
+
+        finishEditButton.addEventListener('click', finishEditing);
+        function finishEditing() {
+            editingZoneId = null;
+            drawButton.disabled = false;
+            resolutionSelect.disabled = false;
+            finishEditButton.style.display = 'none';
+            renderZonesList();
+        }
+
+        function handleEditingClick(hex, polygon) {
+            const zone = zones.find(z => z.id === editingZoneId);
+            if (!zone) return;
+
+            if (zone.hexagons.has(hex)) {
+                zone.hexagons.delete(hex);
+                delete hexToZone[hex];
+                polygon.inZone = false;
+                polygon.setStyle({ fillOpacity: 0, color: 'blue', weight: 1 });
+            } else {
+                if (hexToZone[hex] !== undefined) {
+                    alert('Hexagon already belongs to another zone.');
+                    return;
+                }
+                zone.hexagons.add(hex);
+                hexToZone[hex] = zone.id;
+                polygon.inZone = true;
+                applyZoneStyle(polygon, zone);
+            }
+            drawZoneOutline(zone);
+        }
+
+        function deleteZone(zoneId) {
+            const idx = zones.findIndex(z => z.id === zoneId);
+            if (idx === -1) return;
+            const zone = zones[idx];
+            if (!confirm(`Delete zone "${zone.name}"? This cannot be undone.`)) return;
+            if (editingZoneId !== null) {
+                alert('Finish editing before deleting a zone.');
+                return;
+            }
+
+            if (zone.outlinePolys) zone.outlinePolys.forEach(p => zoneOutlinesLayer.removeLayer(p));
+
+            zone.hexagons.forEach(hex => {
+                delete hexToZone[hex];
+                const poly = cellPolygons[hex];
+                if (poly) {
+                    poly.inZone = false;
+                    poly.setStyle({ fillOpacity: 0, color: 'blue', weight: 1 });
+                }
+            });
+
+            zones.splice(idx, 1);
+            renderZonesList();
+        }
+
+        /*************************************************
+         * Copy buttons
+         *************************************************/
+        copyIdsButton.addEventListener('click', () => {
+            const payload = zones.map(z => ({
+                zone_name: z.name,
+                zone_color: z.color,
+                zone_cells: Array.from(z.hexagons)
+            }));
+            navigator.clipboard.writeText(JSON.stringify(payload, null, 2))
+                .then(() => alert('Zone cell IDs copied!'));
+        });
+
+        copyGeoButton.addEventListener('click', () => {
+            const features = zones.map(z => {
+                const multi = h3.cellsToMultiPolygon(Array.from(z.hexagons), true);
+                return {
+                    type: 'Feature',
+                    geometry: {
+                        type: 'MultiPolygon',
+                        coordinates: multi
+                    },
+                    properties: {
+                        zone_name: z.name,
+                        zone_color: z.color
+                    }
+                };
+            });
+            const geojson = { type: 'FeatureCollection', features };
+            navigator.clipboard.writeText(JSON.stringify(geojson, null, 2))
+                .then(() => alert('GeoJSON copied!'));
+        });
+
+        /*************************************************
+         * Resolution change
+         *************************************************/
+        resolutionSelect.addEventListener('change', function () {
+            if (zones.length && !confirm('Changing resolution will remove all zones and selections. Continue?')) {
+                this.value = h3Resolution;
+                return;
+            }
+            clearAllZones();
+            if (selectedCells.size) clearButton.click();
+            h3Resolution = parseInt(this.value);
+            redrawGrid();
+        });
+
+        function clearAllZones() {
+            zones.forEach(z => {
+                if (z.outlinePolys) z.outlinePolys.forEach(p => zoneOutlinesLayer.removeLayer(p));
+            });
+            zones = [];
+            hexToZone = {};
+            editingZoneId = null;
+            renderZonesList();
+        }
+
+        function redrawGrid() {
+            cellsLayer.clearLayers();
+            zoneOutlinesLayer.clearLayers();
+            drawnCells.clear();
             cellPolygons = {};
+            drawH3Cells();
         }
     </script>
 </body>
