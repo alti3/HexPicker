@@ -1,1087 +1,1141 @@
 <!DOCTYPE html>
 <html lang="en">
-  <head>
-    <meta charset="UTF-8" />
-    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-    <title>Hex Picker with Zones</title>
-    <!-- Font Awesome CSS -->
-    <link
-      rel="stylesheet"
-      href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/5.15.4/css/all.min.css"
-    />
-    <!-- Leaflet CSS -->
-    <link
-      rel="stylesheet"
-      href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css"
-    />
-    <!-- Leaflet Draw CSS -->
-    <link
-      rel="stylesheet"
-      href="https://unpkg.com/leaflet-draw@1.0.4/dist/leaflet.draw.css"
-    />
-    <!-- H3 -->
-    <script src="https://unpkg.com/h3-js@4.1.0/dist/h3-js.umd.js"></script>
 
-    <style>
-      html,
-      body,
-      #map {
-        width: 100%;
-        height: 100%;
-        margin: 0;
-      }
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Hex Picker with Zones</title>
+  <!-- Font Awesome CSS -->
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/5.15.4/css/all.min.css" />
+  <!-- Leaflet CSS -->
+  <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
+  <!-- Leaflet Draw CSS -->
+  <link rel="stylesheet" href="https://unpkg.com/leaflet-draw@1.0.4/dist/leaflet.draw.css" />
+  <!-- H3 -->
+  <script src="https://unpkg.com/h3-js@4.1.0/dist/h3-js.umd.js"></script>
 
-      /* ------------------ Card Layout ------------------ */
-      .card {
-        position: absolute;
-        top: 12px;
-        right: 12px;
-        z-index: 1000;
-        background: #ffffff;
-        border: 1px solid #e1e1e1;
-        border-radius: 10px;
-        box-shadow: 0 4px 16px rgba(0, 0, 0, 0.08);
-        padding: 16px 18px;
-        width: 320px;
-        display: flex;
-        flex-direction: column;
-        gap: 12px;
-        font-family: system-ui, -apple-system, "Segoe UI", Roboto, sans-serif;
-      }
+  <style>
+    html,
+    body,
+    #map {
+      width: 100%;
+      height: 100%;
+      margin: 0;
+    }
 
-      .controls {
-        display: grid;
-        grid-template-columns: repeat(2, 1fr);
-        gap: 8px;
-      }
+    /* ------------------ Card Layout ------------------ */
+    .card {
+      position: absolute;
+      top: 12px;
+      right: 12px;
+      z-index: 1000;
+      background: #ffffff;
+      border: 1px solid #e1e1e1;
+      border-radius: 10px;
+      box-shadow: 0 4px 16px rgba(0, 0, 0, 0.08);
+      padding: 16px 18px;
+      width: 320px;
+      display: flex;
+      flex-direction: column;
+      gap: 12px;
+      font-family: system-ui, -apple-system, "Segoe UI", Roboto, sans-serif;
+    }
 
-      .card select,
-      .card button {
-        padding: 8px 10px;
-        font-size: 14px;
-        border-radius: 6px;
-        border: 1px solid #ccc;
-        background: #f9f9f9;
-        cursor: pointer;
-        transition: background 0.15s;
-      }
+    .controls {
+      display: grid;
+      grid-template-columns: repeat(2, 1fr);
+      gap: 8px;
+    }
 
-      .card button {
-        background: #007bff;
-        color: #ffffff;
-        border: none;
-      }
-      .card button:hover:not(:disabled) {
-        background: #0069d9;
-      }
-      .card button:disabled {
-        background: #d6d6d6;
-        cursor: not-allowed;
-      }
+    .card select,
+    .card button {
+      padding: 8px 10px;
+      font-size: 14px;
+      border-radius: 6px;
+      border: 1px solid #ccc;
+      background: #f9f9f9;
+      cursor: pointer;
+      transition: background 0.15s;
+    }
 
-      #hexagonCounter {
-        font-size: 14px;
-        font-weight: 500;
-      }
+    .card button {
+      background: #007bff;
+      color: #ffffff;
+      border: none;
+    }
 
-      /* ------------------ Zones list ------------------ */
-      #zonesContainer {
-        max-height: 240px; /* Adjusted to make space for summary */
-        overflow-y: auto;
-        border: 1px solid #f1f1f1;
-        padding: 6px 4px;
-        border-radius: 6px;
-      }
+    .card button:hover:not(:disabled) {
+      background: #0069d9;
+    }
 
-      .zone-item {
-        display: flex;
-        align-items: center; /* Align items better when actions are inline */
-        justify-content: space-between;
-        padding: 6px 4px;
-        border-bottom: 1px solid #f3f3f3;
-      }
-      .zone-item:last-child {
-        border-bottom: none;
-      }
+    .card button:disabled {
+      background: #d6d6d6;
+      cursor: not-allowed;
+    }
 
-      .zone-left {
-        display: flex;
-        align-items: flex-start;
-        gap: 8px;
-      }
+    #hexagonCounter {
+      font-size: 14px;
+      font-weight: 500;
+    }
 
-      .color-swatch {
-        width: 16px;
-        height: 16px;
-        border-radius: 3px;
-        border: 1px solid #979797;
-        cursor: pointer;
-        flex: 0 0 16px;
-        margin-top: 2px; /* Align swatch better with first line of text */
-      }
+    /* ------------------ Zones list ------------------ */
+    #zonesContainer {
+      max-height: 240px;
+      /* Adjusted to make space for summary */
+      overflow-y: auto;
+      border: 1px solid #f1f1f1;
+      padding: 6px 4px;
+      border-radius: 6px;
+    }
 
-      .zone-name {
-        font-weight: 600;
-      }
-      .zone-meta {
-        font-size: 12px;
-        color: #5e5e5e;
-      }
+    .zone-item {
+      display: flex;
+      align-items: center;
+      /* Align items better when actions are inline */
+      justify-content: space-between;
+      padding: 6px 4px;
+      border-bottom: 1px solid #f3f3f3;
+    }
 
-      .action-btns {
-        display: flex;
-        flex-direction: row; /* Changed from column */
-        gap: 6px; /* Adjusted gap for row layout */
-        align-items: center;
-      }
-      
-      .action-btns > button {
-        padding: 6px; 
-        line-height: 1;
-        display: inline-flex;
-        align-items: center;
-        justify-content: center;
-        min-width: 30px; 
-        min-height: 30px;
-        border-radius: 4px; 
-        border: none;
-        transition: background-color 0.15s ease;
-      }
+    .zone-item:last-child {
+      border-bottom: none;
+    }
 
-      .action-btns > button i {
-        font-size: 14px;
-        color: inherit;
-      }
-      
-      .action-btns > button:disabled {
-        opacity: 0.65;
-      }
+    .zone-left {
+      display: flex;
+      align-items: flex-start;
+      gap: 8px;
+    }
 
-      .edit-btn {
-        background: #17a2b8;
-        color: #fff;
-      }
-      .edit-btn:hover:not(:disabled) {
-        background: #138496;
-      }
+    .color-swatch {
+      width: 16px;
+      height: 16px;
+      border-radius: 3px;
+      border: 1px solid #979797;
+      cursor: pointer;
+      flex: 0 0 16px;
+      margin-top: 2px;
+      /* Align swatch better with first line of text */
+    }
 
-      .edit-active { 
-        background: #ffc107 !important;
-        color: #000 !important;
-        padding: 6px 10px !important;
-        font-size: 13px; 
-      }
-      .edit-active i {
-         margin-right: 5px;
-      }
+    .zone-name {
+      font-weight: 600;
+    }
 
-      .delete-btn {
-        background: #dc3545;
-        color: #fff;
-      }
-      .delete-btn:hover:not(:disabled) {
-        background: #c82333;
-      }
+    .zone-meta {
+      font-size: 12px;
+      color: #5e5e5e;
+    }
 
-      /* ------------------ Zones Summary ------------------ */
-      #zonesSummary {
-        font-size: 13px;
-        color: #333;
-        padding-top: 8px;
-        margin-top: 4px; /* Reduced margin slightly */
-        border-top: 1px solid #eaeaea;
-        line-height: 1.5;
-      }
-      #zonesSummary strong {
-        color: #111;
-      }
-    </style>
-  </head>
+    .action-btns {
+      display: flex;
+      flex-direction: row;
+      /* Changed from column */
+      gap: 6px;
+      /* Adjusted gap for row layout */
+      align-items: center;
+    }
 
-  <body>
-    <div id="map"></div>
+    .action-btns>button {
+      padding: 6px;
+      line-height: 1;
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      min-width: 30px;
+      min-height: 30px;
+      border-radius: 4px;
+      border: none;
+      transition: background-color 0.15s ease;
+    }
 
-    <!-- ------------- Side Card ------------- -->
-    <div class="card">
-      <div class="controls">
-        <select id="resolutionSelect"></select>
-        <button id="drawButton">Draw Polygon</button>
-        <button id="clearButton" disabled>Clear Selection</button>
-        <button id="createZoneButton" disabled>Create Zone</button>
-        <button
-          id="finishEditButton"
-          style="display: none; background: #28a745"
-        >
-          Finish Editing
-        </button>
-        <button id="copyIdsButton" disabled>Copy Cell IDs</button>
-        <button id="copyGeoButton" disabled>Copy GeoJSON</button>
-        <button id="exportGeoButton" disabled>Export GeoJSON</button>
-        <button id="importGeoButton">Import GeoJSON</button>
-      </div>
-      <input type="file" id="geojsonFile" accept=".geojson,.json" style="display: none;">
+    .action-btns>button i {
+      font-size: 14px;
+      color: inherit;
+    }
 
-      <div id="hexagonCounter">Selected Hexagons: 0</div>
-      <hr />
-      <strong>Zones</strong>
-      <div id="zonesContainer"></div>
-      <div id="zonesSummary"></div> <!-- NEW: Zones Summary Display -->
+    .action-btns>button:disabled {
+      opacity: 0.65;
+    }
+
+    .edit-btn {
+      background: #17a2b8;
+      color: #fff;
+    }
+
+    .edit-btn:hover:not(:disabled) {
+      background: #138496;
+    }
+
+    .edit-active {
+      background: #ffc107 !important;
+      color: #000 !important;
+      padding: 6px 10px !important;
+      font-size: 13px;
+    }
+
+    .edit-active i {
+      margin-right: 5px;
+    }
+
+    .delete-btn {
+      background: #dc3545;
+      color: #fff;
+    }
+
+    .delete-btn:hover:not(:disabled) {
+      background: #c82333;
+    }
+
+    /* ------------------ Zones Summary ------------------ */
+    #zonesSummary {
+      font-size: 13px;
+      color: #333;
+      padding-top: 8px;
+      margin-top: 4px;
+      /* Reduced margin slightly */
+      border-top: 1px solid #eaeaea;
+      line-height: 1.5;
+    }
+
+    #zonesSummary strong {
+      color: #111;
+    }
+
+    .rename-btn {
+      background: #6c757d;
+      color: #fff;
+    }
+
+    .rename-btn:hover:not(:disabled) {
+      background: #5a6268;
+    }
+  </style>
+</head>
+
+<body>
+  <div id="map"></div>
+
+  <!-- ------------- Side Card ------------- -->
+  <div class="card">
+    <div class="controls">
+      <select id="resolutionSelect"></select>
+      <button id="drawButton">Draw Polygon</button>
+      <button id="clearButton" disabled>Clear Selection</button>
+      <button id="createZoneButton" disabled>Create Zone</button>
+      <button id="finishEditButton" style="display: none; background: #28a745">
+        Finish Editing
+      </button>
+      <button id="copyIdsButton" disabled>Copy Cell IDs</button>
+      <button id="copyGeoButton" disabled>Copy GeoJSON</button>
+      <button id="exportGeoButton" disabled>Export GeoJSON</button>
+      <button id="importGeoButton">Import GeoJSON</button>
     </div>
+    <input type="file" id="geojsonFile" accept=".geojson,.json" style="display: none;">
 
-    <!-- Leaflet & Draw JS -->
-    <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
-    <script src="https://unpkg.com/leaflet-draw@1.0.4/dist/leaflet.draw.js"></script>
-    <script>
-      /*************************************************
-       * Globals & helpers
-       *************************************************/
-      const DEFAULT_RESOLUTION = 8;
-      const MAP_CENTER = [32.85, 13.1913];
-      const HEX_COLOR_REGEX =
-        /^#(?:[0-9a-fA-F]{3}|[0-9a-fA-F]{6}|[0-9a-fA-F]{8})$/;
+    <div id="hexagonCounter">Selected Hexagons: 0</div>
+    <hr />
+    <strong>Zones</strong>
+    <div id="zonesContainer"></div>
+    <div id="zonesSummary"></div> <!-- NEW: Zones Summary Display -->
+  </div>
 
-      let h3Resolution = DEFAULT_RESOLUTION;
+  <!-- Leaflet & Draw JS -->
+  <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
+  <script src="https://unpkg.com/leaflet-draw@1.0.4/dist/leaflet.draw.js"></script>
+  <script>
+    /*************************************************
+     * Globals & helpers
+     *************************************************/
+    const DEFAULT_RESOLUTION = 8;
+    const MAP_CENTER = [32.85, 13.1913];
+    const HEX_COLOR_REGEX =
+      /^#(?:[0-9a-fA-F]{3}|[0-9a-fA-F]{6}|[0-9a-fA-F]{8})$/;
 
-      const map = L.map("map").setView(MAP_CENTER, 13);
-      L.tileLayer("https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png", {
-        attribution: "© OpenStreetMap contributors",
-      }).addTo(map);
+    let h3Resolution = DEFAULT_RESOLUTION;
 
-      // Layers
-      const cellsLayer = L.layerGroup().addTo(map);
-      const zoneOutlinesLayer = L.layerGroup().addTo(map); 
+    const map = L.map("map").setView(MAP_CENTER, 13);
+    L.tileLayer("https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png", {
+      attribution: "© OpenStreetMap contributors",
+    }).addTo(map);
 
-      // Data stores
-      let drawnCells = new Set(); 
-      let cellPolygons = {}; 
-      let selectedCells = new Set(); 
+    // Layers
+    const cellsLayer = L.layerGroup().addTo(map);
+    const zoneOutlinesLayer = L.layerGroup().addTo(map);
 
-      let zones = []; 
-      let hexToZone = {}; 
-      let editingZoneId = null; 
-      let zoneCounter = 0; 
+    // Data stores
+    let drawnCells = new Set();
+    let cellPolygons = {};
+    let selectedCells = new Set();
 
-      // -------- Utility --------
-      const fmtInt = (v) => v.toLocaleString(undefined, { maximumFractionDigits: 0 });
+    let zones = [];
+    let hexToZone = {};
+    let editingZoneId = null;
+    let zoneCounter = 0;
 
-      const computeArea = (hexSet) => {
-        let total = 0;
-        hexSet.forEach((h) => (total += h3.cellArea(h, "m2")));
-        return total;
-      };
+    // -------- Utility --------
+    const fmtInt = (v) => v.toLocaleString(undefined, { maximumFractionDigits: 0 });
 
-      function isValidHexColor(c) {
-        return HEX_COLOR_REGEX.test(c);
+    const computeArea = (hexSet) => {
+      let total = 0;
+      hexSet.forEach((h) => (total += h3.cellArea(h, "m2")));
+      return total;
+    };
+
+    function isValidHexColor(c) {
+      return HEX_COLOR_REGEX.test(c);
+    }
+
+    /*************************************************
+     * DOM refs
+     *************************************************/
+    const drawButton = document.getElementById("drawButton");
+    const clearButton = document.getElementById("clearButton");
+    const createZoneButton = document.getElementById("createZoneButton");
+    const finishEditButton = document.getElementById("finishEditButton");
+    const copyIdsButton = document.getElementById("copyIdsButton");
+    const copyGeoButton = document.getElementById("copyGeoButton");
+    const resolutionSelect = document.getElementById("resolutionSelect");
+    const hexagonCounter = document.getElementById("hexagonCounter");
+    const zonesContainer = document.getElementById("zonesContainer");
+    const exportGeoButton = document.getElementById("exportGeoButton");
+    const importGeoButton = document.getElementById("importGeoButton");
+    const geojsonFileInput = document.getElementById("geojsonFile");
+    const zonesSummaryEl = document.getElementById("zonesSummary"); // NEW
+
+
+    // Populate resolution dropdown
+    for (let r = 0; r <= 15; r++) {
+      const opt = document.createElement("option");
+      opt.value = r.toString();
+      opt.textContent = `Resolution ${r}`;
+      if (r === DEFAULT_RESOLUTION) opt.selected = true;
+      resolutionSelect.appendChild(opt);
+    }
+
+    /*************************************************
+     * Utility UI functions
+     *************************************************/
+    function updateHexagonCounter() {
+      hexagonCounter.textContent = `Selected Hexagons: ${selectedCells.size}`;
+      clearButton.disabled = selectedCells.size === 0;
+      createZoneButton.disabled = selectedCells.size === 0;
+    }
+
+    function updateCopyButtons() {
+      const disabled = zones.length === 0;
+      copyIdsButton.disabled = disabled;
+      copyGeoButton.disabled = disabled;
+      exportGeoButton.disabled = disabled;
+    }
+
+    // NEW: Function to update the total zones summary
+    function updateZonesSummary() {
+      if (zones.length === 0) {
+        zonesSummaryEl.innerHTML = "";
+        zonesSummaryEl.style.display = "none";
+        return;
       }
 
-      /*************************************************
-       * DOM refs
-       *************************************************/
-      const drawButton = document.getElementById("drawButton");
-      const clearButton = document.getElementById("clearButton");
-      const createZoneButton = document.getElementById("createZoneButton");
-      const finishEditButton = document.getElementById("finishEditButton");
-      const copyIdsButton = document.getElementById("copyIdsButton");
-      const copyGeoButton = document.getElementById("copyGeoButton");
-      const resolutionSelect = document.getElementById("resolutionSelect");
-      const hexagonCounter = document.getElementById("hexagonCounter");
-      const zonesContainer = document.getElementById("zonesContainer");
-      const exportGeoButton = document.getElementById("exportGeoButton"); 
-      const importGeoButton = document.getElementById("importGeoButton"); 
-      const geojsonFileInput = document.getElementById("geojsonFile");  
-      const zonesSummaryEl = document.getElementById("zonesSummary"); // NEW
+      let totalHexagons = 0;
+      let totalArea = 0;
 
+      zones.forEach(zone => {
+        totalHexagons += zone.hexagons.size;
+        totalArea += zone.area;
+      });
 
-      // Populate resolution dropdown
-      for (let r = 0; r <= 15; r++) {
-        const opt = document.createElement("option");
-        opt.value = r.toString();
-        opt.textContent = `Resolution ${r}`;
-        if (r === DEFAULT_RESOLUTION) opt.selected = true;
-        resolutionSelect.appendChild(opt);
-      }
-
-      /*************************************************
-       * Utility UI functions
-       *************************************************/
-      function updateHexagonCounter() {
-        hexagonCounter.textContent = `Selected Hexagons: ${selectedCells.size}`;
-        clearButton.disabled = selectedCells.size === 0;
-        createZoneButton.disabled = selectedCells.size === 0;
-      }
-
-      function updateCopyButtons() {
-        const disabled = zones.length === 0;
-        copyIdsButton.disabled = disabled;
-        copyGeoButton.disabled = disabled;
-        exportGeoButton.disabled = disabled;
-      }
-      
-      // NEW: Function to update the total zones summary
-      function updateZonesSummary() {
-        if (zones.length === 0) {
-          zonesSummaryEl.innerHTML = "";
-          zonesSummaryEl.style.display = "none";
-          return;
-        }
-
-        let totalHexagons = 0;
-        let totalArea = 0;
-
-        zones.forEach(zone => {
-          totalHexagons += zone.hexagons.size;
-          totalArea += zone.area;
-        });
-
-        zonesSummaryEl.innerHTML = `
+      zonesSummaryEl.innerHTML = `
           <strong>Total Zones:</strong> ${zones.length}<br>
           <strong>Total Hexagons:</strong> ${fmtInt(totalHexagons)}<br>
           <strong>Total Area:</strong> ${fmtInt(totalArea)} m²
         `;
-        zonesSummaryEl.style.display = "block";
-      }
+      zonesSummaryEl.style.display = "block";
+    }
 
-      function renderZonesList() {
-        zonesContainer.innerHTML = "";
-        zones.forEach((z) => {
-          const item = document.createElement("div");
-          item.className = "zone-item";
+    function renderZonesList() {
+      zonesContainer.innerHTML = "";
+      zones.forEach((z) => {
+        const item = document.createElement("div");
+        item.className = "zone-item";
 
-          const left = document.createElement("div");
-          left.className = "zone-left";
+        const left = document.createElement("div");
+        left.className = "zone-left";
 
-          const swatch = document.createElement("span");
-          swatch.className = "color-swatch";
-          swatch.style.background = z.color;
-          swatch.title = "Click to change color";
-          swatch.addEventListener("click", () => changeZoneColor(z.id));
+        const swatch = document.createElement("span");
+        swatch.className = "color-swatch";
+        swatch.style.background = z.color;
+        swatch.title = "Click to change color";
+        swatch.addEventListener("click", () => changeZoneColor(z.id));
 
-          const nameWrap = document.createElement("div");
-          const nameSpan = document.createElement("div");
-          nameSpan.textContent = z.name;
-          nameSpan.className = "zone-name";
+        const nameWrap = document.createElement("div");
+        const nameSpan = document.createElement("div");
+        nameSpan.textContent = z.name;
+        nameSpan.className = "zone-name";
 
-          const metaSpan = document.createElement("div");
-          metaSpan.textContent = `${z.hexagons.size} hex • ${fmtInt(z.area)} m²`;
-          metaSpan.className = "zone-meta";
+        const metaSpan = document.createElement("div");
+        metaSpan.textContent = `${z.hexagons.size} hex • ${fmtInt(z.area)} m²`;
+        metaSpan.className = "zone-meta";
 
-          nameWrap.appendChild(nameSpan);
-          nameWrap.appendChild(metaSpan);
+        nameWrap.appendChild(nameSpan);
+        nameWrap.appendChild(metaSpan);
 
-          left.appendChild(swatch);
-          left.appendChild(nameWrap);
+        left.appendChild(swatch);
+        left.appendChild(nameWrap);
 
-          const actions = document.createElement("div");
-          actions.className = "action-btns";
+        const actions = document.createElement("div");
+        actions.className = "action-btns";
 
-          const editBtn = document.createElement("button");
-          editBtn.className = "edit-btn";
-          if (editingZoneId === z.id) {
-            editBtn.innerHTML = '<i class="fas fa-pencil-alt"></i> Editing…';
-            editBtn.classList.add("edit-active");
-          } else {
-            editBtn.innerHTML = '<i class="fas fa-pencil-alt"></i>';
-            editBtn.title = "Edit Zone";
-          }
-          editBtn.disabled = editingZoneId !== null && editingZoneId !== z.id;
-          editBtn.addEventListener("click", () => toggleEditZone(z.id));
 
-          const deleteBtn = document.createElement("button");
-          deleteBtn.innerHTML = '<i class="fas fa-trash-alt"></i>';
-          deleteBtn.title = "Delete Zone";
-          deleteBtn.className = "delete-btn";
-          deleteBtn.disabled = editingZoneId !== null;
-          deleteBtn.addEventListener("click", () => deleteZone(z.id));
+        // Build edit button
+        const editBtn = document.createElement("button");
+        editBtn.className = "edit-btn";
+        if (editingZoneId === z.id) {
+          editBtn.innerHTML = '<i class="fas fa-pencil-alt"></i> Editing…';
+          editBtn.classList.add("edit-active");
+        } else {
+          editBtn.innerHTML = '<i class="fas fa-pencil-alt"></i>';
+          editBtn.title = "Edit Zone";
+        }
+        editBtn.disabled = editingZoneId !== null && editingZoneId !== z.id;
+        editBtn.addEventListener("click", () => toggleEditZone(z.id));
 
-          actions.appendChild(editBtn);
-          actions.appendChild(deleteBtn);
+        // Build rename button
+        // 🚩 insert this just after you create editBtn
+        const renameBtn = document.createElement("button");
+        renameBtn.className = "rename-btn";
+        renameBtn.innerHTML = '<i class="fas fa-font"></i>';   // any FA icon works
+        renameBtn.title = "Rename Zone";
+        renameBtn.disabled =
+          editingZoneId !== null && editingZoneId !== z.id;    // lock while another zone is being edited
+        renameBtn.addEventListener("click", () => renameZone(z.id));
 
-          item.appendChild(left);
-          item.appendChild(actions);
-          zonesContainer.appendChild(item);
+        // Build delete button
+        const deleteBtn = document.createElement("button");
+        deleteBtn.innerHTML = '<i class="fas fa-trash-alt"></i>';
+        deleteBtn.title = "Delete Zone";
+        deleteBtn.className = "delete-btn";
+        deleteBtn.disabled = editingZoneId !== null;
+        deleteBtn.addEventListener("click", () => deleteZone(z.id));
+
+        actions.appendChild(editBtn);
+        actions.appendChild(renameBtn);
+        actions.appendChild(deleteBtn);
+
+        item.appendChild(left);
+        item.appendChild(actions);
+        zonesContainer.appendChild(item);
+      });
+      updateCopyButtons();
+      updateZonesSummary(); // UPDATED: Call summary update here
+    }
+
+    /*************************************************
+     * Grid drawing
+     *************************************************/
+    function drawH3Cells() {
+      const bounds = map.getBounds();
+      const nw = bounds.getNorthWest();
+      const se = bounds.getSouthEast();
+
+      const hexagonsToDraw = h3.polygonToCells(
+        [
+          [nw.lat, nw.lng],
+          [se.lat, nw.lng],
+          [se.lat, se.lng],
+          [nw.lat, se.lng],
+        ],
+        h3Resolution,
+        false
+      );
+
+      hexagonsToDraw.forEach((hex) => {
+        if (drawnCells.has(hex)) return;
+
+        const coords = h3.cellToBoundary(hex).map(([lat, lng]) => [lat, lng]);
+        const polygon = L.polygon(coords, {
+          color: "blue",
+          weight: 1,
+          fillOpacity: 0,
         });
-        updateCopyButtons();
-        updateZonesSummary(); // UPDATED: Call summary update here
-      }
+        polygon.h3Index = hex;
 
-      /*************************************************
-       * Grid drawing
-       *************************************************/
-      function drawH3Cells() {
-        const bounds = map.getBounds();
-        const nw = bounds.getNorthWest();
-        const se = bounds.getSouthEast();
+        if (hexToZone[hex] !== undefined) {
+          const zone = zones.find((z) => z.id === hexToZone[hex]);
+          if (zone) {
+            applyZoneStyle(polygon, zone);
+            polygon.inZone = true;
+          }
+        }
 
-        const hexagonsToDraw = h3.polygonToCells(
-          [
-            [nw.lat, nw.lng],
-            [se.lat, nw.lng],
-            [se.lat, se.lng],
-            [nw.lat, se.lng],
-          ],
-          h3Resolution,
-          false 
-        );
+        polygon.on("mouseover", function () {
+          if (this.inZone || editingZoneId !== null) return;
+          if (!selectedCells.has(this.h3Index))
+            this.setStyle({ fillOpacity: 0.25 });
+        });
+        polygon.on("mouseout", function () {
+          if (this.inZone || editingZoneId !== null) return;
+          if (!selectedCells.has(this.h3Index))
+            this.setStyle({ fillOpacity: 0 });
+        });
+        polygon.on("click", function () {
+          const hex = this.h3Index;
 
-        hexagonsToDraw.forEach((hex) => {
-          if (drawnCells.has(hex)) return;
-
-          const coords = h3.cellToBoundary(hex).map(([lat, lng]) => [lat, lng]);
-          const polygon = L.polygon(coords, {
-            color: "blue",
-            weight: 1,
-            fillOpacity: 0,
-          });
-          polygon.h3Index = hex;
+          if (editingZoneId !== null) {
+            handleEditingClick(hex, this);
+            return;
+          }
 
           if (hexToZone[hex] !== undefined) {
-            const zone = zones.find((z) => z.id === hexToZone[hex]);
-            if (zone) {
-              applyZoneStyle(polygon, zone);
-              polygon.inZone = true;
-            }
+            alert(
+              `Hexagon already in zone "${zones.find(
+                (z) => z.id === hexToZone[hex]
+              ).name}"`
+            );
+            return;
           }
-
-          polygon.on("mouseover", function () {
-            if (this.inZone || editingZoneId !== null) return;
-            if (!selectedCells.has(this.h3Index))
-              this.setStyle({ fillOpacity: 0.25 });
-          });
-          polygon.on("mouseout", function () {
-            if (this.inZone || editingZoneId !== null) return;
-            if (!selectedCells.has(this.h3Index))
-              this.setStyle({ fillOpacity: 0 });
-          });
-          polygon.on("click", function () {
-            const hex = this.h3Index;
-
-            if (editingZoneId !== null) {
-              handleEditingClick(hex, this);
-              return;
-            }
-
-            if (hexToZone[hex] !== undefined) {
-              alert(
-                `Hexagon already in zone "${zones.find(
-                  (z) => z.id === hexToZone[hex]
-                ).name}"`
-              );
-              return;
-            }
-            toggleSelection(hex, this);
-          });
-
-          cellPolygons[hex] = polygon;
-          cellsLayer.addLayer(polygon);
-          drawnCells.add(hex);
+          toggleSelection(hex, this);
         });
-      }
 
-      map.on("moveend", drawH3Cells);
-      drawH3Cells();
+        cellPolygons[hex] = polygon;
+        cellsLayer.addLayer(polygon);
+        drawnCells.add(hex);
+      });
+    }
 
-      /*************************************************
-       * Selection helpers
-       *************************************************/
-      function toggleSelection(hex, polygon) {
-        if (selectedCells.has(hex)) {
-          selectedCells.delete(hex);
-          polygon.setStyle({ fillOpacity: 0 });
-        } else {
-          selectedCells.add(hex);
-          polygon.setStyle({ fillOpacity: 0.5 });
-        }
-        updateHexagonCounter();
-      }
+    map.on("moveend", drawH3Cells);
+    drawH3Cells();
 
-      function selectHex(hex) {
-        if (selectedCells.has(hex)) return;
-        const polygon = cellPolygons[hex];
-        if (!polygon) return; 
+    /*************************************************
+     * Selection helpers
+     *************************************************/
+    function toggleSelection(hex, polygon) {
+      if (selectedCells.has(hex)) {
+        selectedCells.delete(hex);
+        polygon.setStyle({ fillOpacity: 0 });
+      } else {
         selectedCells.add(hex);
         polygon.setStyle({ fillOpacity: 0.5 });
-        updateHexagonCounter();
       }
+      updateHexagonCounter();
+    }
 
-      /*************************************************
-       * Leaflet‑draw selection polygon
-       *************************************************/
-      const drawControl = new L.Control.Draw({
-        draw: {
-          polygon: true,
-          polyline: false,
-          rectangle: false,
-          circle: false,
-          marker: false,
-          circlemarker: false,
-        },
-      });
-      let isDrawing = false;
+    function selectHex(hex) {
+      if (selectedCells.has(hex)) return;
+      const polygon = cellPolygons[hex];
+      if (!polygon) return;
+      selectedCells.add(hex);
+      polygon.setStyle({ fillOpacity: 0.5 });
+      updateHexagonCounter();
+    }
 
-      drawButton.addEventListener("click", () => {
-        if (isDrawing) {
-          map.removeControl(drawControl);
-          drawButton.textContent = "Draw Polygon";
-          isDrawing = false;
-        } else {
-          if (editingZoneId !== null) return;
-          map.addControl(drawControl);
-          drawButton.textContent = "Cancel Drawing";
-          isDrawing = true;
-        }
-      });
+    /*************************************************
+     * Leaflet‑draw selection polygon
+     *************************************************/
+    const drawControl = new L.Control.Draw({
+      draw: {
+        polygon: true,
+        polyline: false,
+        rectangle: false,
+        circle: false,
+        marker: false,
+        circlemarker: false,
+      },
+    });
+    let isDrawing = false;
 
-      map.on("draw:created", (e) => {
-        const layer = e.layer;
-        const poly = layer.toGeoJSON().geometry.coordinates[0].map(([lng, lat]) => [lat, lng]);
-        const hexagons = h3.polygonToCells(poly, h3Resolution, false);
-        hexagons.forEach((h) => {
-          if (hexToZone[h] !== undefined) return; 
-          selectHex(h);
-        });
+    drawButton.addEventListener("click", () => {
+      if (isDrawing) {
         map.removeControl(drawControl);
         drawButton.textContent = "Draw Polygon";
         isDrawing = false;
+      } else {
+        if (editingZoneId !== null) return;
+        map.addControl(drawControl);
+        drawButton.textContent = "Cancel Drawing";
+        isDrawing = true;
+      }
+    });
+
+    map.on("draw:created", (e) => {
+      const layer = e.layer;
+      const poly = layer.toGeoJSON().geometry.coordinates[0].map(([lng, lat]) => [lat, lng]);
+      const hexagons = h3.polygonToCells(poly, h3Resolution, false);
+      hexagons.forEach((h) => {
+        if (hexToZone[h] !== undefined) return;
+        selectHex(h);
       });
+      map.removeControl(drawControl);
+      drawButton.textContent = "Draw Polygon";
+      isDrawing = false;
+    });
 
-      /*************************************************
-       * Zone functions
-       *************************************************/
-      createZoneButton.addEventListener("click", () => {
-        if (selectedCells.size === 0) return;
+    /*************************************************
+     * Zone functions
+     *************************************************/
+    createZoneButton.addEventListener("click", () => {
+      if (selectedCells.size === 0) return;
 
-        let name;
-        while (true) {
-          name = prompt("Zone name:");
-          if (name === null) return; 
-          name = name.trim(); 
-          if (name === "") {
-            alert("Zone name cannot be empty. Please enter a name.");
-            continue;
-          }
-          if (zones.some((z) => z.name.toLowerCase() === name.toLowerCase())) {
-            alert("Zone name must be unique. Please try a different name.");
-            continue;
-          }
-          break; 
+      let name;
+      while (true) {
+        name = prompt("Zone name:");
+        if (name === null) return;
+        name = name.trim();
+        if (name === "") {
+          alert("Zone name cannot be empty. Please enter a name.");
+          continue;
         }
-
-        let color;
-        while (true) {
-          color = prompt("Zone color (#RRGGBB or #RGB):", "#ff0000");
-          if (color === null) return; 
-          if (!isValidHexColor(color)) {
-            alert("Color must be a valid hex code starting with # (e.g., #ff0000 or #f00).");
-            continue;
-          }
-          if (zones.some((z) => z.color.toLowerCase() === color.toLowerCase())) {
-            alert("Zone color must be unique. Please choose a different color.");
-            continue;
-          }
-          break; 
+        if (zones.some((z) => z.name.toLowerCase() === name.toLowerCase())) {
+          alert("Zone name must be unique. Please try a different name.");
+          continue;
         }
+        break;
+      }
 
-        const overlap = Array.from(selectedCells).filter(
-          (h) => hexToZone[h] !== undefined
-        );
-        if (overlap.length) {
-          alert("Some selected hexagons are already assigned to zones.");
+      let color;
+      while (true) {
+        color = prompt("Zone color (#RRGGBB or #RGB):", "#ff0000");
+        if (color === null) return;
+        if (!isValidHexColor(color)) {
+          alert("Color must be a valid hex code starting with # (e.g., #ff0000 or #f00).");
+          continue;
+        }
+        if (zones.some((z) => z.color.toLowerCase() === color.toLowerCase())) {
+          alert("Zone color must be unique. Please choose a different color.");
+          continue;
+        }
+        break;
+      }
+
+      const overlap = Array.from(selectedCells).filter(
+        (h) => hexToZone[h] !== undefined
+      );
+      if (overlap.length) {
+        alert("Some selected hexagons are already assigned to zones.");
+        return;
+      }
+
+      const area = computeArea(selectedCells);
+
+      const zone = {
+        id: zoneCounter++,
+        name,
+        color,
+        hexagons: new Set(selectedCells),
+        area,
+        outlinePolys: [],
+      };
+
+      zones.push(zone);
+      zone.hexagons.forEach((hex) => {
+        hexToZone[hex] = zone.id;
+        const poly = cellPolygons[hex];
+        if (poly) {
+          applyZoneStyle(poly, zone);
+          poly.inZone = true;
+        }
+      });
+      drawZoneOutline(zone);
+
+      selectedCells.clear();
+      updateHexagonCounter();
+      renderZonesList();
+    });
+
+    clearButton.addEventListener("click", () => {
+      selectedCells.forEach((hex) => {
+        const poly = cellPolygons[hex];
+        if (poly) poly.setStyle({ fillOpacity: 0 });
+      });
+      selectedCells.clear();
+      updateHexagonCounter();
+    });
+
+    function applyZoneStyle(polygon, zone) {
+      polygon.setStyle({
+        fillOpacity: 0.5,
+        fillColor: zone.color,
+        //color: zone.color, // color of hexagon outline, irrelevant when weight is 0
+        weight: 0,
+      });
+    }
+
+    function drawZoneOutline(zone) {
+      if (zone.outlinePolys?.length) {
+        zone.outlinePolys.forEach((p) => zoneOutlinesLayer.removeLayer(p));
+      }
+      zone.outlinePolys = [];
+
+      const multiLngLat = h3.cellsToMultiPolygon(Array.from(zone.hexagons), true);
+      multiLngLat.forEach((polyLngLat) => {
+        const latlngs = polyLngLat.map((ringLngLat) => ringLngLat.map(([lng, lat]) => [lat, lng]));
+        const outline = L.polygon(latlngs, {
+          color: zone.color,
+          weight: 3,
+          fillOpacity: 0,
+          interactive: false,
+        });
+        zoneOutlinesLayer.addLayer(outline);
+        zone.outlinePolys.push(outline);
+      });
+    }
+
+    function changeZoneColor(zoneId) {
+      const zone = zones.find((z) => z.id === zoneId);
+      if (!zone) return;
+
+      let newColor;
+      while (true) {
+        newColor = prompt("New color (#RRGGBB or #RGB):", zone.color);
+        if (newColor === null) return;
+
+        if (newColor.toLowerCase() === zone.color.toLowerCase()) {
           return;
         }
 
-        const area = computeArea(selectedCells);
-
-        const zone = {
-          id: zoneCounter++,
-          name, 
-          color,
-          hexagons: new Set(selectedCells),
-          area,
-          outlinePolys: [],
-        };
-
-        zones.push(zone);
-        zone.hexagons.forEach((hex) => {
-          hexToZone[hex] = zone.id;
-          const poly = cellPolygons[hex];
-          if (poly) {
-            applyZoneStyle(poly, zone);
-            poly.inZone = true;
-          }
-        });
-        drawZoneOutline(zone);
-
-        selectedCells.clear();
-        updateHexagonCounter();
-        renderZonesList();
-      });
-
-      clearButton.addEventListener("click", () => {
-        selectedCells.forEach((hex) => {
-          const poly = cellPolygons[hex];
-          if (poly) poly.setStyle({ fillOpacity: 0 });
-        });
-        selectedCells.clear();
-        updateHexagonCounter();
-      });
-
-      function applyZoneStyle(polygon, zone) {
-        polygon.setStyle({
-          fillOpacity: 0.5,
-          fillColor: zone.color,
-          //color: zone.color, // color of hexagon outline, irrelevant when weight is 0
-          weight: 0,
-        });
-      }
-
-      function drawZoneOutline(zone) {
-        if (zone.outlinePolys?.length) {
-          zone.outlinePolys.forEach((p) => zoneOutlinesLayer.removeLayer(p));
+        if (!isValidHexColor(newColor)) {
+          alert("Color must be a valid hex code starting with # (e.g., #ff0000 or #f00).");
+          continue;
         }
-        zone.outlinePolys = [];
-
-        const multiLngLat = h3.cellsToMultiPolygon(Array.from(zone.hexagons), true);
-        multiLngLat.forEach((polyLngLat) => {
-          const latlngs = polyLngLat.map((ringLngLat) => ringLngLat.map(([lng, lat]) => [lat, lng]));
-          const outline = L.polygon(latlngs, {
-            color: zone.color,
-            weight: 3,
-            fillOpacity: 0,
-            interactive: false,
-          });
-          zoneOutlinesLayer.addLayer(outline);
-          zone.outlinePolys.push(outline);
-        });
-      }
-
-      function changeZoneColor(zoneId) {
-        const zone = zones.find((z) => z.id === zoneId);
-        if (!zone) return;
-
-        let newColor;
-        while (true) {
-          newColor = prompt("New color (#RRGGBB or #RGB):", zone.color);
-          if (newColor === null) return; 
-
-          if (newColor.toLowerCase() === zone.color.toLowerCase()) {
-            return;
-          }
-
-          if (!isValidHexColor(newColor)) {
-            alert("Color must be a valid hex code starting with # (e.g., #ff0000 or #f00).");
-            continue;
-          }
-          if (
-            zones.some(
-              (z_other) =>
-                z_other.id !== zoneId &&
-                z_other.color.toLowerCase() === newColor.toLowerCase()
-            )
-          ) {
-            alert(
-              "This color is already used by another zone. Please choose a unique color."
-            );
-            continue;
-          }
-          break; 
-        }
-
-        zone.color = newColor;
-        zone.hexagons.forEach((hex) => {
-          const poly = cellPolygons[hex];
-          if (poly) applyZoneStyle(poly, zone);
-        });
-        drawZoneOutline(zone);
-        renderZonesList();
-      }
-
-      function toggleEditZone(zoneId) {
-        if (editingZoneId === zoneId) {
-          finishEditing();
-          return;
-        }
-        if (editingZoneId !== null) return; 
-        editingZoneId = zoneId;
-        drawButton.disabled = true;
-        resolutionSelect.disabled = true;
-        createZoneButton.disabled = true; 
-        importGeoButton.disabled = true;  
-        finishEditButton.style.display = "block";
-        renderZonesList();
-      }
-
-      finishEditButton.addEventListener("click", finishEditing);
-      function finishEditing() {
-        editingZoneId = null;
-        drawButton.disabled = false;
-        resolutionSelect.disabled = false;
-        createZoneButton.disabled = selectedCells.size === 0; 
-        importGeoButton.disabled = false; 
-        finishEditButton.style.display = "none";
-        renderZonesList();
-      }
-
-      function handleEditingClick(hex, polygon) {
-        const zone = zones.find((z) => z.id === editingZoneId);
-        if (!zone) return;
-
-        const hexArea = h3.cellArea(hex, "m2");
-
-        if (zone.hexagons.has(hex)) {
-          zone.hexagons.delete(hex);
-          zone.area -= hexArea;
-          delete hexToZone[hex];
-          polygon.inZone = false;
-          polygon.setStyle({ fillOpacity: 0, color: "blue", weight: 1 });
-        } else {
-          if (hexToZone[hex] !== undefined) {
-            alert("Hexagon already belongs to another zone.");
-            return;
-          }
-          zone.hexagons.add(hex);
-          zone.area += hexArea;
-          hexToZone[hex] = zone.id;
-          polygon.inZone = true;
-          applyZoneStyle(polygon, zone);
-        }
-        drawZoneOutline(zone);
-        renderZonesList();
-      }
-
-      function deleteZone(zoneId) {
-        const idx = zones.findIndex((z) => z.id === zoneId);
-        if (idx === -1) return;
-        const zone = zones[idx];
-        if (!confirm(`Delete zone "${zone.name}"? This cannot be undone.`)) return;
-        if (editingZoneId !== null) {
-          alert("Finish editing before deleting a zone.");
-          return;
-        }
-
-        zone.outlinePolys?.forEach((p) => zoneOutlinesLayer.removeLayer(p));
-
-        zone.hexagons.forEach((hex) => {
-          delete hexToZone[hex];
-          const poly = cellPolygons[hex];
-          if (poly) {
-            poly.inZone = false;
-            poly.setStyle({ fillOpacity: 0, color: "blue", weight: 1 });
-          }
-        });
-
-        zones.splice(idx, 1);
-        renderZonesList();
-      }
-
-      /*************************************************
-       * Copy & Export buttons
-       *************************************************/
-      function getGeoJSONForAllZones() {
-        const features = zones.map((z) => {
-          const multiLngLat = h3.cellsToMultiPolygon(Array.from(z.hexagons), true); 
-          return {
-            type: "Feature",
-            geometry: {
-              type: "MultiPolygon",
-              coordinates: multiLngLat,
-            },
-            properties: {
-              zone_name: z.name,
-              zone_color: z.color,
-              hex_count: z.hexagons.size,
-              area_m2: Math.round(z.area),
-              h3_resolution: h3Resolution, 
-            },
-          };
-        });
-        return { type: "FeatureCollection", features };
-      }
-      
-      copyIdsButton.addEventListener("click", () => {
-        const payload = zones.map((z) => ({
-          zone_name: z.name,
-          zone_color: z.color,
-          hex_count: z.hexagons.size,
-          area_m2: Math.round(z.area),
-          zone_cells: Array.from(z.hexagons),
-        }));
-        navigator.clipboard
-          .writeText(JSON.stringify(payload, null, 2))
-          .then(() => alert("Zone cell IDs copied!"));
-      });
-
-      copyGeoButton.addEventListener("click", () => {
-        const geojson = getGeoJSONForAllZones();
-        navigator.clipboard
-          .writeText(JSON.stringify(geojson, null, 2))
-          .then(() => alert("GeoJSON copied!"));
-      });
-
-      exportGeoButton.addEventListener("click", () => {
-        if (zones.length === 0) return;
-        const geojson = getGeoJSONForAllZones();
-        const geojsonString = JSON.stringify(geojson, null, 2);
-
-        const blob = new Blob([geojsonString], { type: "application/json" });
-        const url = URL.createObjectURL(blob);
-        const a = document.createElement("a");
-        a.href = url;
-        a.download = "zones.geojson";
-        document.body.appendChild(a);
-        a.click();
-        document.body.removeChild(a);
-        URL.revokeObjectURL(url);
-      });
-
-
-      /*************************************************
-       * Import GeoJSON
-       *************************************************/
-      let genericZoneNameCounter = 1;
-      const defaultColors = [
-        "#E6194B", "#3CB44B", "#FFE119", "#4363D8", "#F58231",
-        "#911EB4", "#46F0F0", "#F032E6", "#BCF60C", "#FABEBE",
-        "#008080", "#E6BEFF", "#9A6324", "#FFFAC8", "#800000",
-        "#AAFFC3", "#808000", "#FFD8B1", "#000075", "#808080"
-      ];
-      let defaultColorIndex = 0;
-
-      function generateUniqueZoneName(currentGlobalZones, tempNewZonesList) {
-          let name;
-          do {
-              name = `Zone ${genericZoneNameCounter++}`;
-          } while (currentGlobalZones.some(z => z.name.toLowerCase() === name.toLowerCase()) ||
-                   tempNewZonesList.some(nz => nz.name.toLowerCase() === name.toLowerCase()));
-          return name;
-      }
-
-      function generateUniqueZoneColor(currentGlobalZones, tempNewZonesList) {
-          let color;
-          let attempts = 0;
-          const initialIndex = defaultColorIndex;
-
-          do {
-              color = defaultColors[defaultColorIndex % defaultColors.length];
-              defaultColorIndex++;
-              attempts++;
-              if (attempts > defaultColors.length && defaultColorIndex % defaultColors.length === initialIndex % defaultColors.length) {
-                  break; 
-              }
-          } while ((currentGlobalZones.some(z => z.color.toLowerCase() === color.toLowerCase()) ||
-                    tempNewZonesList.some(nz => nz.color.toLowerCase() === color.toLowerCase())) && attempts < defaultColors.length * 2);
-
-          if (currentGlobalZones.some(z => z.color.toLowerCase() === color.toLowerCase()) ||
-              tempNewZonesList.some(nz => nz.color.toLowerCase() === color.toLowerCase())) {
-              do {
-                  color = '#' + Math.floor(Math.random()*16777215).toString(16).padStart(6, '0');
-              } while (currentGlobalZones.some(z => z.color.toLowerCase() === color.toLowerCase()) ||
-                       tempNewZonesList.some(nz => nz.color.toLowerCase() === color.toLowerCase()));
-          }
-          return color;
-      }
-
-      importGeoButton.addEventListener("click", () => {
-        if (editingZoneId !== null) {
-          alert("Please finish editing the current zone before importing.");
-          return;
-        }
-        geojsonFileInput.click();
-      });
-
-      geojsonFileInput.addEventListener("change", (event) => {
-        const file = event.target.files[0];
-        if (!file) return;
-
-        const reader = new FileReader();
-        reader.onload = (e) => {
-          try {
-            const geojsonData = JSON.parse(e.target.result);
-
-            if (geojsonData.type !== "FeatureCollection" || !Array.isArray(geojsonData.features)) {
-              throw new Error("Invalid GeoJSON: Must be a FeatureCollection with a 'features' array.");
-            }
-            if (geojsonData.features.length === 0) {
-              alert("No features found in the GeoJSON file.");
-              event.target.value = null; return;
-            }
-            
-            const importResolution = geojsonData.features[0]?.properties?.h3_resolution;
-            if (importResolution !== undefined && importResolution !== h3Resolution) {
-                if (!confirm(`The imported GeoJSON was created with H3 resolution ${importResolution}, but your current resolution is ${h3Resolution}. Cells will be generated using resolution ${h3Resolution}. This may lead to different results. Continue?`)) {
-                    event.target.value = null; return;
-                }
-            }
-
-            if (zones.length > 0) {
-              if (!confirm("Importing new GeoJSON will clear all existing zones. Continue?")) {
-                event.target.value = null; return;
-              }
-              clearAllZones(); 
-              if (selectedCells.size) clearButton.click(); 
-            } else {
-              genericZoneNameCounter = 1;
-              defaultColorIndex = 0;
-            }
-
-            const importedZonesBatch = []; 
-            let importedCellCount = 0;
-
-            for (const feature of geojsonData.features) {
-              if (feature.type !== "Feature" || !feature.geometry || feature.geometry.type !== "MultiPolygon") {
-                console.warn("Skipping invalid feature:", feature);
-                continue;
-              }
-
-              let zoneName = feature.properties?.zone_name;
-              let zoneColor = feature.properties?.zone_color;
-
-              if (!zoneName || String(zoneName).trim() === "") {
-                zoneName = generateUniqueZoneName(zones, importedZonesBatch);
-              } else {
-                zoneName = String(zoneName).trim();
-                if (zones.some(z => z.name.toLowerCase() === zoneName.toLowerCase()) || 
-                    importedZonesBatch.some(nz => nz.name.toLowerCase() === zoneName.toLowerCase())) {
-                  console.warn(`Zone name "${zoneName}" from file already exists or is duplicated. Assigning a generic name.`);
-                  zoneName = generateUniqueZoneName(zones, importedZonesBatch);
-                }
-              }
-
-              if (!zoneColor || !isValidHexColor(zoneColor)) {
-                if (zoneColor) console.warn(`Invalid color "${zoneColor}" for zone "${zoneName}". Assigning default.`);
-                zoneColor = generateUniqueZoneColor(zones, importedZonesBatch);
-              } else {
-                   if (zones.some(z => z.color.toLowerCase() === zoneColor.toLowerCase()) || 
-                       importedZonesBatch.some(nz => nz.color.toLowerCase() === zoneColor.toLowerCase())) {
-                     console.warn(`Zone color "${zoneColor}" for zone "${zoneName}" already exists or is duplicated. Assigning new default.`);
-                     zoneColor = generateUniqueZoneColor(zones, importedZonesBatch);
-                  }
-              }
-
-              const zoneH3Cells = new Set();
-              for (const polygonGeoJsonCoords of feature.geometry.coordinates) {
-                if (polygonGeoJsonCoords && polygonGeoJsonCoords.length > 0 && polygonGeoJsonCoords[0].length >= 3) { 
-                  try {
-                    const cellsFromPolygon = h3.polygonToCells(polygonGeoJsonCoords, h3Resolution, true); 
-                    cellsFromPolygon.forEach(cell => {
-                      if (hexToZone[cell] !== undefined) { 
-                        const existingGlobalZone = zones.find(z => z.id === hexToZone[cell]);
-                        console.warn(`Hex ${cell} for "${zoneName}" already in existing zone "${existingGlobalZone?.name}". Skipping cell.`);
-                      } else {
-                        let cellInBatch = false;
-                        for(const bz of importedZonesBatch) {
-                            if(bz.hexagons.has(cell)) {
-                                console.warn(`Hex ${cell} for "${zoneName}" already in another new zone "${bz.name}" from this import. Skipping cell.`);
-                                cellInBatch = true;
-                                break;
-                            }
-                        }
-                        if (!cellInBatch) {
-                           zoneH3Cells.add(cell);
-                        }
-                      }
-                    });
-                  } catch (h3Error) {
-                    console.error(`Error converting polygon to H3 cells for zone "${zoneName}":`, h3Error, "Polygon data:", polygonGeoJsonCoords);
-                  }
-                } else {
-                  console.warn(`Skipping malformed polygon within MultiPolygon for zone "${zoneName}".`);
-                }
-              }
-
-              if (zoneH3Cells.size > 0) {
-                importedZonesBatch.push({
-                  id: -1, 
-                  name: zoneName,
-                  color: zoneColor,
-                  hexagons: zoneH3Cells,
-                  area: computeArea(zoneH3Cells),
-                  outlinePolys: [],
-                });
-                importedCellCount += zoneH3Cells.size;
-              } else {
-                console.warn(`No valid, non-overlapping H3 cells generated for zone "${zoneName}". It might be too small, outside map, or entirely overlapping.`);
-              }
-            }
-
-            importedZonesBatch.forEach(newZoneData => {
-                newZoneData.id = zoneCounter++; 
-                zones.push(newZoneData);
-                newZoneData.hexagons.forEach(hex => {
-                    hexToZone[hex] = newZoneData.id;
-                });
-            });
-            
-            if (importedZonesBatch.length > 0) {
-                redrawGrid(); 
-                renderZonesList(); 
-                alert(`Successfully imported ${importedZonesBatch.length} zone(s) with a total of ${importedCellCount} unique cells.`);
-            } else {
-                alert("Import complete, but no new zones were added. Check console for details if features were expected.");
-            }
-
-          } catch (error) {
-            console.error("Error importing GeoJSON:", error);
-            alert(`Error importing GeoJSON: ${error.message}`);
-          } finally {
-            event.target.value = null; 
-          }
-        };
-        reader.onerror = () => {
-          alert("Error reading file.");
-          event.target.value = null;
-        };
-        reader.readAsText(file);
-      });
-
-      /*************************************************
-       * Resolution change
-       *************************************************/
-      resolutionSelect.addEventListener("change", function () {
         if (
-          zones.length &&
-          !confirm(
-            "Changing resolution will remove all zones and selections. Continue?"
+          zones.some(
+            (z_other) =>
+              z_other.id !== zoneId &&
+              z_other.color.toLowerCase() === newColor.toLowerCase()
           )
         ) {
-          this.value = h3Resolution;
+          alert(
+            "This color is already used by another zone. Please choose a unique color."
+          );
+          continue;
+        }
+        break;
+      }
+
+      zone.color = newColor;
+      zone.hexagons.forEach((hex) => {
+        const poly = cellPolygons[hex];
+        if (poly) applyZoneStyle(poly, zone);
+      });
+      drawZoneOutline(zone);
+      renderZonesList();
+    }
+
+    function toggleEditZone(zoneId) {
+      if (editingZoneId === zoneId) {
+        finishEditing();
+        return;
+      }
+      if (editingZoneId !== null) return;
+      editingZoneId = zoneId;
+      drawButton.disabled = true;
+      resolutionSelect.disabled = true;
+      createZoneButton.disabled = true;
+      importGeoButton.disabled = true;
+      finishEditButton.style.display = "block";
+      renderZonesList();
+    }
+
+    finishEditButton.addEventListener("click", finishEditing);
+    function finishEditing() {
+      editingZoneId = null;
+      drawButton.disabled = false;
+      resolutionSelect.disabled = false;
+      createZoneButton.disabled = selectedCells.size === 0;
+      importGeoButton.disabled = false;
+      finishEditButton.style.display = "none";
+      renderZonesList();
+    }
+
+    function handleEditingClick(hex, polygon) {
+      const zone = zones.find((z) => z.id === editingZoneId);
+      if (!zone) return;
+
+      const hexArea = h3.cellArea(hex, "m2");
+
+      if (zone.hexagons.has(hex)) {
+        zone.hexagons.delete(hex);
+        zone.area -= hexArea;
+        delete hexToZone[hex];
+        polygon.inZone = false;
+        polygon.setStyle({ fillOpacity: 0, color: "blue", weight: 1 });
+      } else {
+        if (hexToZone[hex] !== undefined) {
+          alert("Hexagon already belongs to another zone.");
           return;
         }
-        clearAllZones();
-        if (selectedCells.size) clearButton.click();
-        h3Resolution = parseInt(this.value);
-        redrawGrid();
+        zone.hexagons.add(hex);
+        zone.area += hexArea;
+        hexToZone[hex] = zone.id;
+        polygon.inZone = true;
+        applyZoneStyle(polygon, zone);
+      }
+      drawZoneOutline(zone);
+      renderZonesList();
+    }
+
+    function deleteZone(zoneId) {
+      const idx = zones.findIndex((z) => z.id === zoneId);
+      if (idx === -1) return;
+      const zone = zones[idx];
+      if (!confirm(`Delete zone "${zone.name}"? This cannot be undone.`)) return;
+      if (editingZoneId !== null) {
+        alert("Finish editing before deleting a zone.");
+        return;
+      }
+
+      zone.outlinePolys?.forEach((p) => zoneOutlinesLayer.removeLayer(p));
+
+      zone.hexagons.forEach((hex) => {
+        delete hexToZone[hex];
+        const poly = cellPolygons[hex];
+        if (poly) {
+          poly.inZone = false;
+          poly.setStyle({ fillOpacity: 0, color: "blue", weight: 1 });
+        }
       });
 
-      function clearAllZones() {
-        if (editingZoneId !== null) {
-            finishEditing(); 
+      zones.splice(idx, 1);
+      renderZonesList();
+    }
+
+    /*************************************************
+     * Copy & Export buttons
+     *************************************************/
+    function getGeoJSONForAllZones() {
+      const features = zones.map((z) => {
+        const multiLngLat = h3.cellsToMultiPolygon(Array.from(z.hexagons), true);
+        return {
+          type: "Feature",
+          geometry: {
+            type: "MultiPolygon",
+            coordinates: multiLngLat,
+          },
+          properties: {
+            zone_name: z.name,
+            zone_color: z.color,
+            hex_count: z.hexagons.size,
+            area_m2: Math.round(z.area),
+            h3_resolution: h3Resolution,
+          },
+        };
+      });
+      return { type: "FeatureCollection", features };
+    }
+
+    copyIdsButton.addEventListener("click", () => {
+      const payload = zones.map((z) => ({
+        zone_name: z.name,
+        zone_color: z.color,
+        hex_count: z.hexagons.size,
+        area_m2: Math.round(z.area),
+        zone_cells: Array.from(z.hexagons),
+      }));
+      navigator.clipboard
+        .writeText(JSON.stringify(payload, null, 2))
+        .then(() => alert("Zone cell IDs copied!"));
+    });
+
+    copyGeoButton.addEventListener("click", () => {
+      const geojson = getGeoJSONForAllZones();
+      navigator.clipboard
+        .writeText(JSON.stringify(geojson, null, 2))
+        .then(() => alert("GeoJSON copied!"));
+    });
+
+    exportGeoButton.addEventListener("click", () => {
+      if (zones.length === 0) return;
+      const geojson = getGeoJSONForAllZones();
+      const geojsonString = JSON.stringify(geojson, null, 2);
+
+      const blob = new Blob([geojsonString], { type: "application/json" });
+      const url = URL.createObjectURL(blob);
+      const a = document.createElement("a");
+      a.href = url;
+      a.download = "zones.geojson";
+      document.body.appendChild(a);
+      a.click();
+      document.body.removeChild(a);
+      URL.revokeObjectURL(url);
+    });
+
+
+    /*************************************************
+     * Import GeoJSON
+     *************************************************/
+    let genericZoneNameCounter = 1;
+    const defaultColors = [
+      "#E6194B", "#3CB44B", "#FFE119", "#4363D8", "#F58231",
+      "#911EB4", "#46F0F0", "#F032E6", "#BCF60C", "#FABEBE",
+      "#008080", "#E6BEFF", "#9A6324", "#FFFAC8", "#800000",
+      "#AAFFC3", "#808000", "#FFD8B1", "#000075", "#808080"
+    ];
+    let defaultColorIndex = 0;
+
+    function generateUniqueZoneName(currentGlobalZones, tempNewZonesList) {
+      let name;
+      do {
+        name = `Zone ${genericZoneNameCounter++}`;
+      } while (currentGlobalZones.some(z => z.name.toLowerCase() === name.toLowerCase()) ||
+        tempNewZonesList.some(nz => nz.name.toLowerCase() === name.toLowerCase()));
+      return name;
+    }
+
+    function generateUniqueZoneColor(currentGlobalZones, tempNewZonesList) {
+      let color;
+      let attempts = 0;
+      const initialIndex = defaultColorIndex;
+
+      do {
+        color = defaultColors[defaultColorIndex % defaultColors.length];
+        defaultColorIndex++;
+        attempts++;
+        if (attempts > defaultColors.length && defaultColorIndex % defaultColors.length === initialIndex % defaultColors.length) {
+          break;
         }
-        zones.forEach((z) => {
-          z.outlinePolys?.forEach((p) => zoneOutlinesLayer.removeLayer(p));
-        });
-        zones = []; 
-        hexToZone = {}; 
-        
-        renderZonesList(); // This will also call updateZonesSummary
-        updateCopyButtons(); 
+      } while ((currentGlobalZones.some(z => z.color.toLowerCase() === color.toLowerCase()) ||
+        tempNewZonesList.some(nz => nz.color.toLowerCase() === color.toLowerCase())) && attempts < defaultColors.length * 2);
 
-        genericZoneNameCounter = 1;
-        defaultColorIndex = 0;
+      if (currentGlobalZones.some(z => z.color.toLowerCase() === color.toLowerCase()) ||
+        tempNewZonesList.some(nz => nz.color.toLowerCase() === color.toLowerCase())) {
+        do {
+          color = '#' + Math.floor(Math.random() * 16777215).toString(16).padStart(6, '0');
+        } while (currentGlobalZones.some(z => z.color.toLowerCase() === color.toLowerCase()) ||
+          tempNewZonesList.some(nz => nz.color.toLowerCase() === color.toLowerCase()));
       }
+      return color;
+    }
 
-      function redrawGrid() {
-        cellsLayer.clearLayers();
-        zoneOutlinesLayer.clearLayers(); 
-        drawnCells.clear();
-        cellPolygons = {};
-        drawH3Cells(); 
-        zones.forEach(drawZoneOutline); 
+    importGeoButton.addEventListener("click", () => {
+      if (editingZoneId !== null) {
+        alert("Please finish editing the current zone before importing.");
+        return;
       }
+      geojsonFileInput.click();
+    });
 
-      // Initial UI setup
+    geojsonFileInput.addEventListener("change", (event) => {
+      const file = event.target.files[0];
+      if (!file) return;
+
+      const reader = new FileReader();
+      reader.onload = (e) => {
+        try {
+          const geojsonData = JSON.parse(e.target.result);
+
+          if (geojsonData.type !== "FeatureCollection" || !Array.isArray(geojsonData.features)) {
+            throw new Error("Invalid GeoJSON: Must be a FeatureCollection with a 'features' array.");
+          }
+          if (geojsonData.features.length === 0) {
+            alert("No features found in the GeoJSON file.");
+            event.target.value = null; return;
+          }
+
+          const importResolution = geojsonData.features[0]?.properties?.h3_resolution;
+          if (importResolution !== undefined && importResolution !== h3Resolution) {
+            if (!confirm(`The imported GeoJSON was created with H3 resolution ${importResolution}, but your current resolution is ${h3Resolution}. Cells will be generated using resolution ${h3Resolution}. This may lead to different results. Continue?`)) {
+              event.target.value = null; return;
+            }
+          }
+
+          if (zones.length > 0) {
+            if (!confirm("Importing new GeoJSON will clear all existing zones. Continue?")) {
+              event.target.value = null; return;
+            }
+            clearAllZones();
+            if (selectedCells.size) clearButton.click();
+          } else {
+            genericZoneNameCounter = 1;
+            defaultColorIndex = 0;
+          }
+
+          const importedZonesBatch = [];
+          let importedCellCount = 0;
+
+          for (const feature of geojsonData.features) {
+            if (feature.type !== "Feature" || !feature.geometry || feature.geometry.type !== "MultiPolygon") {
+              console.warn("Skipping invalid feature:", feature);
+              continue;
+            }
+
+            let zoneName = feature.properties?.zone_name;
+            let zoneColor = feature.properties?.zone_color;
+
+            if (!zoneName || String(zoneName).trim() === "") {
+              zoneName = generateUniqueZoneName(zones, importedZonesBatch);
+            } else {
+              zoneName = String(zoneName).trim();
+              if (zones.some(z => z.name.toLowerCase() === zoneName.toLowerCase()) ||
+                importedZonesBatch.some(nz => nz.name.toLowerCase() === zoneName.toLowerCase())) {
+                console.warn(`Zone name "${zoneName}" from file already exists or is duplicated. Assigning a generic name.`);
+                zoneName = generateUniqueZoneName(zones, importedZonesBatch);
+              }
+            }
+
+            if (!zoneColor || !isValidHexColor(zoneColor)) {
+              if (zoneColor) console.warn(`Invalid color "${zoneColor}" for zone "${zoneName}". Assigning default.`);
+              zoneColor = generateUniqueZoneColor(zones, importedZonesBatch);
+            } else {
+              if (zones.some(z => z.color.toLowerCase() === zoneColor.toLowerCase()) ||
+                importedZonesBatch.some(nz => nz.color.toLowerCase() === zoneColor.toLowerCase())) {
+                console.warn(`Zone color "${zoneColor}" for zone "${zoneName}" already exists or is duplicated. Assigning new default.`);
+                zoneColor = generateUniqueZoneColor(zones, importedZonesBatch);
+              }
+            }
+
+            const zoneH3Cells = new Set();
+            for (const polygonGeoJsonCoords of feature.geometry.coordinates) {
+              if (polygonGeoJsonCoords && polygonGeoJsonCoords.length > 0 && polygonGeoJsonCoords[0].length >= 3) {
+                try {
+                  const cellsFromPolygon = h3.polygonToCells(polygonGeoJsonCoords, h3Resolution, true);
+                  cellsFromPolygon.forEach(cell => {
+                    if (hexToZone[cell] !== undefined) {
+                      const existingGlobalZone = zones.find(z => z.id === hexToZone[cell]);
+                      console.warn(`Hex ${cell} for "${zoneName}" already in existing zone "${existingGlobalZone?.name}". Skipping cell.`);
+                    } else {
+                      let cellInBatch = false;
+                      for (const bz of importedZonesBatch) {
+                        if (bz.hexagons.has(cell)) {
+                          console.warn(`Hex ${cell} for "${zoneName}" already in another new zone "${bz.name}" from this import. Skipping cell.`);
+                          cellInBatch = true;
+                          break;
+                        }
+                      }
+                      if (!cellInBatch) {
+                        zoneH3Cells.add(cell);
+                      }
+                    }
+                  });
+                } catch (h3Error) {
+                  console.error(`Error converting polygon to H3 cells for zone "${zoneName}":`, h3Error, "Polygon data:", polygonGeoJsonCoords);
+                }
+              } else {
+                console.warn(`Skipping malformed polygon within MultiPolygon for zone "${zoneName}".`);
+              }
+            }
+
+            if (zoneH3Cells.size > 0) {
+              importedZonesBatch.push({
+                id: -1,
+                name: zoneName,
+                color: zoneColor,
+                hexagons: zoneH3Cells,
+                area: computeArea(zoneH3Cells),
+                outlinePolys: [],
+              });
+              importedCellCount += zoneH3Cells.size;
+            } else {
+              console.warn(`No valid, non-overlapping H3 cells generated for zone "${zoneName}". It might be too small, outside map, or entirely overlapping.`);
+            }
+          }
+
+          importedZonesBatch.forEach(newZoneData => {
+            newZoneData.id = zoneCounter++;
+            zones.push(newZoneData);
+            newZoneData.hexagons.forEach(hex => {
+              hexToZone[hex] = newZoneData.id;
+            });
+          });
+
+          if (importedZonesBatch.length > 0) {
+            redrawGrid();
+            renderZonesList();
+            alert(`Successfully imported ${importedZonesBatch.length} zone(s) with a total of ${importedCellCount} unique cells.`);
+          } else {
+            alert("Import complete, but no new zones were added. Check console for details if features were expected.");
+          }
+
+        } catch (error) {
+          console.error("Error importing GeoJSON:", error);
+          alert(`Error importing GeoJSON: ${error.message}`);
+        } finally {
+          event.target.value = null;
+        }
+      };
+      reader.onerror = () => {
+        alert("Error reading file.");
+        event.target.value = null;
+      };
+      reader.readAsText(file);
+    });
+
+    /*************************************************
+     * Resolution change
+     *************************************************/
+    resolutionSelect.addEventListener("change", function () {
+      if (
+        zones.length &&
+        !confirm(
+          "Changing resolution will remove all zones and selections. Continue?"
+        )
+      ) {
+        this.value = h3Resolution;
+        return;
+      }
+      clearAllZones();
+      if (selectedCells.size) clearButton.click();
+      h3Resolution = parseInt(this.value);
+      redrawGrid();
+    });
+
+    function clearAllZones() {
+      if (editingZoneId !== null) {
+        finishEditing();
+      }
+      zones.forEach((z) => {
+        z.outlinePolys?.forEach((p) => zoneOutlinesLayer.removeLayer(p));
+      });
+      zones = [];
+      hexToZone = {};
+
+      renderZonesList(); // This will also call updateZonesSummary
       updateCopyButtons();
-      renderZonesList(); // This will also call updateZonesSummary for initial state
 
-    </script>
-  </body>
+      genericZoneNameCounter = 1;
+      defaultColorIndex = 0;
+    }
+
+    function redrawGrid() {
+      cellsLayer.clearLayers();
+      zoneOutlinesLayer.clearLayers();
+      drawnCells.clear();
+      cellPolygons = {};
+      drawH3Cells();
+
+      zones.forEach(drawZoneOutline);
+    }
+
+    /*************************************************
+     * Rename zone
+     *************************************************/
+    function renameZone(zoneId) {
+      const zone = zones.find(z => z.id === zoneId);
+      if (!zone) return;
+
+      let newName;
+      while (true) {
+        newName = prompt("New zone name:", zone.name);
+        if (newName === null) return;           // user cancelled
+        newName = newName.trim();
+        if (newName === "") {
+          alert("Name cannot be empty."); continue;
+        }
+        if (zones.some(z => z.id !== zoneId &&
+          z.name.toLowerCase() === newName.toLowerCase())) {
+          alert("Name must be unique."); continue;
+        }
+        break;                                  // valid
+      }
+
+      zone.name = newName;
+      renderZonesList();   // refresh UI & summary
+    }
+
+    // Initial UI setup
+    updateCopyButtons();
+    renderZonesList(); // This will also call updateZonesSummary for initial state
+
+  </script>
+</body>
+
 </html>
