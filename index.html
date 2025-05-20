@@ -13,6 +13,8 @@
   <link rel="stylesheet" href="https://unpkg.com/leaflet-draw@1.0.4/dist/leaflet.draw.css" />
   <!-- H3 -->
   <script src="https://unpkg.com/h3-js@4.1.0/dist/h3-js.umd.js"></script>
+  <!-- Wellknown -->
+  <script src="https://unpkg.com/wellknown@0.5.0/wellknown.min.js"></script>
 
   <style>
     html,
@@ -229,9 +231,12 @@
       <button id="copyIdsButton" disabled>Copy Cell IDs</button>
       <button id="copyGeoButton" disabled>Copy GeoJSON</button>
       <button id="exportGeoButton" disabled>Export GeoJSON</button>
+      <button id="exportWktButton" disabled>Export WKT</button> {/* New Button */}
       <button id="importGeoButton">Import GeoJSON</button>
+      <button id="importWktButton">Import WKT</button>
     </div>
     <input type="file" id="geojsonFile" accept=".geojson,.json" style="display: none;">
+    <input type="file" id="wktFile" accept=".wkt,.txt" style="display: none;">
 
     <div id="hexagonCounter">Selected Hexagons: 0</div>
     <hr />
@@ -295,12 +300,15 @@
     const finishEditButton = document.getElementById("finishEditButton");
     const copyIdsButton = document.getElementById("copyIdsButton");
     const copyGeoButton = document.getElementById("copyGeoButton");
+    const exportWktButton = document.getElementById("exportWktButton"); // WKT Export
     const resolutionSelect = document.getElementById("resolutionSelect");
     const hexagonCounter = document.getElementById("hexagonCounter");
     const zonesContainer = document.getElementById("zonesContainer");
     const exportGeoButton = document.getElementById("exportGeoButton");
     const importGeoButton = document.getElementById("importGeoButton");
     const geojsonFileInput = document.getElementById("geojsonFile");
+    const importWktButton = document.getElementById("importWktButton"); // WKT
+    const wktFileInput = document.getElementById("wktFile"); // WKT
     const zonesSummaryEl = document.getElementById("zonesSummary"); // NEW
 
 
@@ -327,6 +335,7 @@
       copyIdsButton.disabled = disabled;
       copyGeoButton.disabled = disabled;
       exportGeoButton.disabled = disabled;
+      exportWktButton.disabled = disabled; // WKT Export
     }
 
     // NEW: Function to update the total zones summary
@@ -732,6 +741,7 @@
       resolutionSelect.disabled = true;
       createZoneButton.disabled = true;
       importGeoButton.disabled = true;
+      importWktButton.disabled = true; // WKT
       finishEditButton.style.display = "block";
       renderZonesList();
     }
@@ -743,6 +753,7 @@
       resolutionSelect.disabled = false;
       createZoneButton.disabled = selectedCells.size === 0;
       importGeoButton.disabled = false;
+      importWktButton.disabled = false; // WKT
       finishEditButton.style.display = "none";
       renderZonesList();
     }
@@ -858,6 +869,59 @@
       document.body.removeChild(a);
       URL.revokeObjectURL(url);
     });
+
+    // WKT Export Function
+    function exportWKT() {
+      if (zones.length === 0) {
+        alert("No zones to export.");
+        return;
+      }
+
+      try {
+        const geometries = zones.map(zone => {
+          // h3.cellsToMultiPolygon returns an array of polygons (each polygon is an array of rings, each ring is an array of [lng, lat] points)
+          // This structure is directly compatible with what `wellknown.stringify()` expects for a MultiPolygon GeoJSON geometry
+          const multiPolygonCoordinates = h3.cellsToMultiPolygon(Array.from(zone.hexagons), true);
+          return {
+            type: "MultiPolygon",
+            coordinates: multiPolygonCoordinates
+          };
+        });
+
+        let wktString;
+        if (geometries.length === 1) {
+          // If only one zone, export it as a single MultiPolygon WKT
+          wktString = wellknown.stringify(geometries[0]);
+        } else {
+          // If multiple zones, export as a GeometryCollection
+          const geometryCollection = {
+            type: "GeometryCollection",
+            geometries: geometries // Array of GeoJSON geometry objects
+          };
+          wktString = wellknown.stringify(geometryCollection);
+        }
+
+        if (!wktString) {
+          throw new Error("Failed to generate WKT string.");
+        }
+
+        const blob = new Blob([wktString], { type: "text/plain;charset=utf-8" });
+        const url = URL.createObjectURL(blob);
+        const a = document.createElement("a");
+        a.href = url;
+        a.download = "zones.wkt"; // Suggested filename
+        document.body.appendChild(a);
+        a.click();
+        document.body.removeChild(a);
+        URL.revokeObjectURL(url);
+
+      } catch (error) {
+        console.error("Error exporting WKT:", error);
+        alert(`Error exporting WKT: ${error.message}`);
+      }
+    }
+    exportWktButton.addEventListener("click", exportWKT);
+    // End WKT Export
 
 
     /*************************************************
@@ -1058,6 +1122,197 @@
       };
       reader.readAsText(file);
     });
+
+    // WKT Import Logic
+    importWktButton.addEventListener("click", () => {
+      if (editingZoneId !== null) {
+        alert("Please finish editing the current zone before importing WKT.");
+        return;
+      }
+      wktFileInput.click(); // Trigger hidden file input
+    });
+
+    wktFileInput.addEventListener("change", (event) => {
+      const file = event.target.files[0];
+      if (!file) return;
+
+      const reader = new FileReader();
+      reader.onload = (e) => {
+        importWKTString(e.target.result); // Pass file content to the new function
+        event.target.value = null; // Reset file input
+      };
+      reader.onerror = () => {
+        alert("Error reading WKT file.");
+        event.target.value = null; // Reset file input
+      };
+      reader.readAsText(file);
+    });
+
+    function importWKTString(wktString) {
+      try {
+        const geojsonFeatureOrCollection = wellknown.parse(wktString);
+        if (!geojsonFeatureOrCollection) {
+          throw new Error("Invalid WKT string or empty content.");
+        }
+
+        // Standardize to a FeatureCollection
+        let features = [];
+        if (geojsonFeatureOrCollection.type === "FeatureCollection") {
+          features = geojsonFeatureOrCollection.features;
+        } else if (geojsonFeatureOrCollection.type === "Feature") {
+          features = [geojsonFeatureOrCollection];
+        } else if (geojsonFeatureOrCollection.type === "GeometryCollection") {
+          features = geojsonFeatureOrCollection.geometries.map((geom, index) => ({
+            type: "Feature",
+            geometry: geom,
+            properties: { zone_name: `WKT Zone ${index + 1}` } // Default name for geometries in GeometryCollection
+          }));
+        } else { // Assuming it's a single geometry
+          features = [{
+            type: "Feature",
+            geometry: geojsonFeatureOrCollection,
+            properties: { zone_name: "WKT Imported Zone" } // Default name for single geometry
+          }];
+        }
+
+        if (features.length === 0) {
+          alert("No valid geometries found in the WKT data.");
+          return;
+        }
+
+        // Reuse existing GeoJSON import logic structure
+        const importResolution = features[0]?.properties?.h3_resolution; // WKT won't have this, but keep for consistency if adapting
+        if (importResolution !== undefined && importResolution !== h3Resolution) {
+          if (!confirm(`The imported data might have an intended H3 resolution of ${importResolution}, but your current resolution is ${h3Resolution}. Cells will be generated using resolution ${h3Resolution}. This may lead to different results. Continue?`)) {
+            return;
+          }
+        }
+
+        if (zones.length > 0) {
+          if (!confirm("Importing new WKT data will clear all existing zones. Continue?")) {
+            return;
+          }
+          clearAllZones();
+          if (selectedCells.size) clearButton.click();
+        } else {
+          genericZoneNameCounter = 1; // Reset counters if starting fresh
+          defaultColorIndex = 0;
+        }
+
+        const importedZonesBatch = [];
+        let importedCellCount = 0;
+
+        for (const feature of features) {
+          if (feature.type !== "Feature" || !feature.geometry) {
+            console.warn("Skipping invalid feature:", feature);
+            continue;
+          }
+
+          let zoneName = feature.properties?.zone_name;
+          let zoneColor = feature.properties?.zone_color;
+
+          if (!zoneName || String(zoneName).trim() === "") {
+            zoneName = generateUniqueZoneName(zones, importedZonesBatch);
+          } else {
+            zoneName = String(zoneName).trim();
+            if (zones.some(z => z.name.toLowerCase() === zoneName.toLowerCase()) ||
+              importedZonesBatch.some(nz => nz.name.toLowerCase() === zoneName.toLowerCase())) {
+              console.warn(`Zone name "${zoneName}" from WKT processing already exists or is duplicated. Assigning a generic name.`);
+              zoneName = generateUniqueZoneName(zones, importedZonesBatch);
+            }
+          }
+
+          if (!zoneColor || !isValidHexColor(zoneColor)) {
+            if (zoneColor) console.warn(`Invalid color "${zoneColor}" for zone "${zoneName}". Assigning default.`);
+            zoneColor = generateUniqueZoneColor(zones, importedZonesBatch);
+          } else {
+            if (zones.some(z => z.color.toLowerCase() === zoneColor.toLowerCase()) ||
+              importedZonesBatch.some(nz => nz.color.toLowerCase() === zoneColor.toLowerCase())) {
+              console.warn(`Zone color "${zoneColor}" for zone "${zoneName}" already exists or is duplicated. Assigning new default.`);
+              zoneColor = generateUniqueZoneColor(zones, importedZonesBatch);
+            }
+          }
+
+          const zoneH3Cells = new Set();
+          let polygonsToProcess = [];
+          if (feature.geometry.type === "Polygon") {
+            polygonsToProcess.push(feature.geometry.coordinates);
+          } else if (feature.geometry.type === "MultiPolygon") {
+            polygonsToProcess = feature.geometry.coordinates;
+          } else {
+            console.warn(`Unsupported geometry type "${feature.geometry.type}" for H3 conversion from WKT. Skipping feature "${zoneName}".`);
+            continue;
+          }
+
+          for (const geoJsonCoords of polygonsToProcess) {
+            // Keep coordinates as [lng, lat] from GeoJSON
+            // h3.polygonToCells expects [lng, lat] when the third argument is true
+            if (geoJsonCoords && geoJsonCoords.length > 0 && geoJsonCoords[0].length >= 3) {
+              try {
+                const cellsFromPolygon = h3.polygonToCells(geoJsonCoords, h3Resolution, true);
+                cellsFromPolygon.forEach(cell => {
+                  if (hexToZone[cell] !== undefined) {
+                    const existingGlobalZone = zones.find(z => z.id === hexToZone[cell]);
+                    console.warn(`Hex ${cell} for "${zoneName}" already in existing zone "${existingGlobalZone?.name}". Skipping cell.`);
+                  } else {
+                    let cellInBatch = false;
+                    for (const bz of importedZonesBatch) {
+                      if (bz.hexagons.has(cell)) {
+                        console.warn(`Hex ${cell} for "${zoneName}" already in another new zone "${bz.name}" from this import. Skipping cell.`);
+                        cellInBatch = true;
+                        break;
+                      }
+                    }
+                    if (!cellInBatch) {
+                      zoneH3Cells.add(cell);
+                    }
+                  }
+                });
+              } catch (h3Error) {
+                console.error(`Error converting polygon to H3 cells for zone "${zoneName}" (from WKT):`, h3Error, "Polygon data:", geoJsonCoords);
+              }
+            } else {
+              console.warn(`Skipping malformed polygon within WKT feature for zone "${zoneName}".`);
+            }
+          }
+
+          if (zoneH3Cells.size > 0) {
+            importedZonesBatch.push({
+              id: -1, // Placeholder
+              name: zoneName,
+              color: zoneColor,
+              hexagons: zoneH3Cells,
+              area: computeArea(zoneH3Cells),
+              outlinePolys: [],
+            });
+            importedCellCount += zoneH3Cells.size;
+          } else {
+            console.warn(`No valid, non-overlapping H3 cells generated for WKT-derived zone "${zoneName}". It might be too small, outside map, or entirely overlapping.`);
+          }
+        }
+
+        importedZonesBatch.forEach(newZoneData => {
+          newZoneData.id = zoneCounter++;
+          zones.push(newZoneData);
+          newZoneData.hexagons.forEach(hex => {
+            hexToZone[hex] = newZoneData.id;
+          });
+        });
+
+        if (importedZonesBatch.length > 0) {
+          redrawGrid();
+          renderZonesList();
+          alert(`Successfully imported ${importedZonesBatch.length} zone(s) from WKT with a total of ${importedCellCount} unique cells.`);
+        } else {
+          alert("WKT import complete, but no new zones were added. Check console for details if features/geometries were expected.");
+        }
+
+      } catch (error) {
+        console.error("Error importing WKT:", error);
+        alert(`Error importing WKT: ${error.message}`);
+      }
+    }
+    // End WKT Import Logic
 
     /*************************************************
      * Resolution change
