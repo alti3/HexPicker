@@ -10,7 +10,7 @@ Interactive web map for drawing **non‑overlapping, color‑coded zones** on an
 ## Screenshot
 
 ![Hex Picker screenshot](image.png)
-*(Note: Screenshot may not reflect the latest UI additions like Import/Export buttons and the zone summary display.)*
+*(Note: Screenshot may not reflect the latest UI additions like Import/Export buttons, the zone summary display, and the new center/locate button.)*
 
 ---
 
@@ -27,6 +27,7 @@ Interactive web map for drawing **non‑overlapping, color‑coded zones** on an
 | • Change zone color anytime by clicking the color swatch.                              |                                                                                                                                                                                                     |
 | • Delete zones.                                                                        |                                                                                                                                                                                                     |
 | • **Live summary:** Total count of zones, hexagons, and area displayed below the list.   |                                                                                                                                                                                                     |
+| • Center on zone: crosshairs button fits map to the zone’s bounding box (north/south/east/west bounds). |                                                                                                                                                                                                     |
 | **Styling**                                                                            | Zone interiors fill with chosen color; a bold outline is generated from `h3.cellsToMultiPolygon`, so only the outer/inner perimeter is emphasized.                                                  |
 | **Export & Import**                                                                    |                                                                                                                                                                                                     |
 | • `Copy Zones Cells IDs`                                                               | → JSON array of zone details and H3 cell IDs (to clipboard).                                                                                                                                        |
@@ -59,9 +60,11 @@ Interactive web map for drawing **non‑overlapping, color‑coded zones** on an
     Press the <i class="fas fa-pencil-alt"></i> **Edit** button next to a zone, then click hexes on the map to add/remove them from that zone. Click **Finish Editing** to save changes.
 5.  **Change color**
     Click the zone’s color swatch in the list, then enter a new *unique* #hex color.
-6.  **Delete zone**
+6.  **Center a zone**
+    Press the <i class="fas fa-crosshairs"></i> **Center** button next to a zone to pan/zoom the map so the zone’s polygon is fully in view (using its northern‑most, southern‑most, eastern‑most, and western‑most extents).
+7.  **Delete zone**
     Press the <i class="fas fa-trash-alt"></i> **Delete** button next to a zone.
-7.  **Export**
+8.  **Export**
     *   **Copy Zones Cells IDs**: Copies a JSON structure with zone names, colors, and their H3 cell IDs to the clipboard.
     *   **Copy Zones GeoJSON**: Copies a GeoJSON FeatureCollection (with MultiPolygons) of all zones to the clipboard (e.g., for pasting into [geojson.io](https://geojson.io/)).
     *   **Export GeoJSON File**: Downloads the same GeoJSON FeatureCollection directly as a `zones.geojson` file.
