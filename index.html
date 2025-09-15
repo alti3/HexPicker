@@ -183,6 +183,15 @@
       background: #c82333;
     }
 
+    .locate-btn {
+      background: #6f42c1;
+      color: #fff;
+    }
+
+    .locate-btn:hover:not(:disabled) {
+      background: #59309f;
+    }
+
     /* ------------------ Zones Summary ------------------ */
     #zonesSummary {
       font-size: 13px;
@@ -392,6 +401,14 @@
         renameBtn.disabled = editingZoneId !== null && editingZoneId !== z.id;
         renameBtn.addEventListener("click", () => renameZone(z.id));
 
+        // Center/locate button
+        const locateBtn = document.createElement("button");
+        locateBtn.className = "locate-btn";
+        locateBtn.innerHTML = '<i class="fas fa-crosshairs"></i>';
+        locateBtn.title = "Center map on zone";
+        locateBtn.disabled = editingZoneId !== null && editingZoneId !== z.id;
+        locateBtn.addEventListener("click", () => zoomToZone(z.id));
+
         // Delete button
         const deleteBtn = document.createElement("button");
         deleteBtn.innerHTML = '<i class="fas fa-trash-alt"></i>';
@@ -402,6 +419,7 @@
 
         actions.appendChild(editBtn);
         actions.appendChild(renameBtn);
+        actions.appendChild(locateBtn);
         actions.appendChild(deleteBtn);
 
         item.appendChild(left);
@@ -611,6 +629,43 @@
       zone.hexagons.forEach((hex) => { const poly = cellPolygons[hex]; if (poly) applyZoneStyle(poly, zone); });
       drawZoneOutline(zone);
       renderZonesList();
+    }
+
+    // Fit map to a zone's full extent (N/S/E/W extremes)
+    function zoomToZone(zoneId) {
+      const zone = zones.find((z) => z.id === zoneId);
+      if (!zone) return;
+
+      // Ensure outlines exist for bounds calculation
+      if (!zone.outlinePolys || zone.outlinePolys.length === 0) {
+        drawZoneOutline(zone);
+      }
+
+      let combinedBounds = null;
+      if (zone.outlinePolys && zone.outlinePolys.length) {
+        zone.outlinePolys.forEach((poly) => {
+          const b = poly.getBounds();
+          if (!combinedBounds) {
+            combinedBounds = L.latLngBounds(b.getSouthWest(), b.getNorthEast());
+          } else {
+            combinedBounds.extend(b);
+          }
+        });
+      } else {
+        // Fallback: compute bounds from cell boundaries
+        const latlngs = [];
+        zone.hexagons.forEach((hex) => {
+          const boundary = h3.cellToBoundary(hex);
+          boundary.forEach(([lat, lng]) => latlngs.push([lat, lng]));
+        });
+        if (latlngs.length) {
+          combinedBounds = L.latLngBounds(latlngs.map(([lat, lng]) => L.latLng(lat, lng)));
+        }
+      }
+
+      if (combinedBounds) {
+        map.fitBounds(combinedBounds, { padding: [40, 40] });
+      }
     }
 
     function toggleEditZone(zoneId) {
