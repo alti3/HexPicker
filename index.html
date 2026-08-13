@@ -92,6 +92,7 @@
       display: flex;
       align-items: center;
       justify-content: space-between;
+      gap: 8px;
       padding: 6px 4px;
       border-bottom: 1px solid #f3f3f3;
     }
@@ -104,6 +105,12 @@
       display: flex;
       align-items: flex-start;
       gap: 8px;
+      min-width: 0;
+      flex: 1;
+    }
+
+    .zone-left>div {
+      min-width: 0;
     }
 
     .color-swatch {
@@ -118,6 +125,9 @@
 
     .zone-name {
       font-weight: 600;
+      overflow: hidden;
+      text-overflow: ellipsis;
+      white-space: nowrap;
     }
 
     .zone-meta {
@@ -130,6 +140,7 @@
       flex-direction: row;
       gap: 6px;
       align-items: center;
+      flex: 0 0 auto;
     }
 
     .action-btns>button {
@@ -190,6 +201,15 @@
 
     .locate-btn:hover:not(:disabled) {
       background: #59309f;
+    }
+
+    .copy-zone-geojson-btn {
+      background: #28a745;
+      color: #fff;
+    }
+
+    .copy-zone-geojson-btn:hover:not(:disabled) {
+      background: #218838;
     }
 
     /* ------------------ Zones Summary ------------------ */
@@ -365,10 +385,11 @@
         const nameWrap = document.createElement("div");
         const nameSpan = document.createElement("div");
         nameSpan.textContent = z.name;
+        nameSpan.title = z.name;
         nameSpan.className = "zone-name";
 
         const metaSpan = document.createElement("div");
-        metaSpan.textContent = `${z.hexagons.size} hex • ${fmtInt(z.area)} m²`;
+        metaSpan.innerHTML = `${z.hexagons.size} hex<br>${fmtInt(z.area)} m²`;
         metaSpan.className = "zone-meta";
 
         nameWrap.appendChild(nameSpan);
@@ -409,6 +430,14 @@
         locateBtn.disabled = editingZoneId !== null && editingZoneId !== z.id;
         locateBtn.addEventListener("click", () => zoomToZone(z.id));
 
+        // Copy this zone as a GeoJSON Feature
+        const copyGeoJSONBtn = document.createElement("button");
+        copyGeoJSONBtn.className = "copy-zone-geojson-btn";
+        copyGeoJSONBtn.innerHTML = '<i class="fas fa-copy"></i>';
+        copyGeoJSONBtn.title = "Copy zone GeoJSON";
+        copyGeoJSONBtn.setAttribute("aria-label", `Copy GeoJSON for ${z.name}`);
+        copyGeoJSONBtn.addEventListener("click", () => copyZoneGeoJSON(z.id));
+
         // Delete button
         const deleteBtn = document.createElement("button");
         deleteBtn.innerHTML = '<i class="fas fa-trash-alt"></i>';
@@ -420,6 +449,7 @@
         actions.appendChild(editBtn);
         actions.appendChild(renameBtn);
         actions.appendChild(locateBtn);
+        actions.appendChild(copyGeoJSONBtn);
         actions.appendChild(deleteBtn);
 
         item.appendChild(left);
@@ -736,22 +766,33 @@
     /*************************************************
      * Copy & Export buttons
      *************************************************/
+    function getGeoJSONFeatureForZone(zone) {
+      const multiLngLat = h3.cellsToMultiPolygon(Array.from(zone.hexagons), true);
+      return {
+        type: "Feature",
+        geometry: { type: "MultiPolygon", coordinates: multiLngLat },
+        properties: {
+          zone_name: zone.name,
+          zone_color: zone.color,
+          hex_count: zone.hexagons.size,
+          area_m2: Math.round(zone.area),
+          h3_resolution: h3Resolution,
+        },
+      };
+    }
+
     function getGeoJSONForAllZones() {
-      const features = zones.map((z) => {
-        const multiLngLat = h3.cellsToMultiPolygon(Array.from(z.hexagons), true);
-        return {
-          type: "Feature",
-          geometry: { type: "MultiPolygon", coordinates: multiLngLat },
-          properties: {
-            zone_name: z.name,
-            zone_color: z.color,
-            hex_count: z.hexagons.size,
-            area_m2: Math.round(z.area),
-            h3_resolution: h3Resolution,
-          },
-        };
-      });
+      const features = zones.map(getGeoJSONFeatureForZone);
       return { type: "FeatureCollection", features };
+    }
+
+    function copyZoneGeoJSON(zoneId) {
+      const zone = zones.find((z) => z.id === zoneId);
+      if (!zone) return;
+
+      const feature = getGeoJSONFeatureForZone(zone);
+      navigator.clipboard.writeText(JSON.stringify(feature, null, 2))
+        .then(() => alert(`GeoJSON for zone "${zone.name}" copied!`));
     }
 
     copyIdsButton.addEventListener("click", () => {
