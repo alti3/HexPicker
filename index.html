@@ -24,24 +24,83 @@
   <div id="map" class="h-full w-full"></div>
 
   <!-- ------------- Side Card ------------- -->
-  <aside class="absolute top-3 right-3 z-[1000] flex w-[calc(100%-1.5rem)] max-w-80 flex-col gap-3 rounded-[10px] border border-[#e1e1e1] bg-white px-[18px] py-4 shadow-[0_4px_16px_rgba(0,0,0,0.08)]">
-    <div class="grid grid-cols-2 gap-2">
-      <select id="resolutionSelect" class="cursor-pointer rounded-md border border-[#ccc] bg-[#f9f9f9] px-2.5 py-2 text-sm"></select>
-      <button id="drawButton" class="cursor-pointer rounded-md bg-[#007bff] px-2.5 py-2 text-sm text-white transition-colors duration-150 enabled:hover:bg-[#0069d9] disabled:cursor-not-allowed disabled:bg-[#d6d6d6]">Draw Polygon</button>
-      <button id="clearButton" class="cursor-pointer rounded-md bg-[#007bff] px-2.5 py-2 text-sm text-white transition-colors duration-150 enabled:hover:bg-[#0069d9] disabled:cursor-not-allowed disabled:bg-[#d6d6d6]" disabled>Clear Selection</button>
-      <button id="createZoneButton" class="cursor-pointer rounded-md bg-[#007bff] px-2.5 py-2 text-sm text-white transition-colors duration-150 enabled:hover:bg-[#0069d9] disabled:cursor-not-allowed disabled:bg-[#d6d6d6]" disabled>Create Zone</button>
-      <button id="finishEditButton" class="hidden cursor-pointer rounded-md bg-[#28a745] px-2.5 py-2 text-sm text-white transition-colors duration-150 enabled:hover:bg-[#218838] disabled:cursor-not-allowed disabled:bg-[#d6d6d6]">Finish Editing</button>
-      <button id="copyIdsButton" class="cursor-pointer rounded-md bg-[#007bff] px-2.5 py-2 text-sm text-white transition-colors duration-150 enabled:hover:bg-[#0069d9] disabled:cursor-not-allowed disabled:bg-[#d6d6d6]" disabled>Copy Cell IDs</button>
-      <button id="copyGeoButton" class="cursor-pointer rounded-md bg-[#007bff] px-2.5 py-2 text-sm text-white transition-colors duration-150 enabled:hover:bg-[#0069d9] disabled:cursor-not-allowed disabled:bg-[#d6d6d6]" disabled>Copy GeoJSON</button>
-      <button id="exportGeoButton" class="cursor-pointer rounded-md bg-[#007bff] px-2.5 py-2 text-sm text-white transition-colors duration-150 enabled:hover:bg-[#0069d9] disabled:cursor-not-allowed disabled:bg-[#d6d6d6]" disabled>Export GeoJSON</button>
-      <button id="importGeoButton" class="cursor-pointer rounded-md bg-[#007bff] px-2.5 py-2 text-sm text-white transition-colors duration-150 enabled:hover:bg-[#0069d9] disabled:cursor-not-allowed disabled:bg-[#d6d6d6]">Import GeoJSON</button>
-    </div>
+  <aside class="absolute top-3 right-3 z-[1000] flex h-[calc(100%-1.5rem)] w-96 flex-col gap-3 overflow-y-auto overscroll-contain rounded-[10px] border border-[#d9dde3] bg-white px-5 py-4 shadow-[0_8px_28px_rgba(0,0,0,0.14)]">
+    <header class="flex flex-none items-start justify-between gap-4 border-b border-[#e4e7ec] pb-3">
+      <div>
+        <h1 class="text-lg font-semibold leading-6 text-[#1f2937]">Hex Picker</h1>
+        <p class="mt-0.5 text-xs text-[#667085]">Build and manage map zones.</p>
+      </div>
+      <div id="hexagonCounter" class="flex-none rounded-full bg-[#eef4ff] px-3 py-1.5 text-xs font-semibold text-[#175cd3]" aria-live="polite">Selected Hexagons: 0</div>
+    </header>
+
+    <section class="flex-none rounded-lg border border-[#dfe3e8] bg-[#fafbfc] p-3" aria-labelledby="selectionHeading">
+      <div class="mb-2.5 flex items-center justify-between gap-3">
+        <h2 id="selectionHeading" class="text-sm font-semibold text-[#344054]">Selection</h2>
+        <label for="resolutionSelect" class="text-xs font-medium text-[#667085]">Grid resolution</label>
+      </div>
+      <select id="resolutionSelect" class="mb-2.5 w-full cursor-pointer rounded-md border border-[#cfd4dc] bg-white px-3 py-2 text-sm text-[#344054] outline-none focus:border-[#84adff] focus:ring-2 focus:ring-[#2e90fa]/20 disabled:cursor-not-allowed disabled:bg-[#f2f4f7]"></select>
+      <div class="grid grid-cols-2 gap-2">
+        <button id="drawButton" class="inline-flex min-h-9 cursor-pointer items-center justify-center gap-2 rounded-md border border-[#175cd3] bg-[#175cd3] px-3 py-2 text-xs font-semibold text-white transition-colors enabled:hover:bg-[#1849a9] disabled:cursor-not-allowed disabled:border-[#d0d5dd] disabled:bg-[#e4e7ec] disabled:text-[#98a2b3]">
+          <i class="fas fa-draw-polygon" aria-hidden="true"></i> Draw polygon
+        </button>
+        <button id="createZoneButton" class="inline-flex min-h-9 cursor-pointer items-center justify-center gap-2 rounded-md border border-[#27844b] bg-[#27844b] px-3 py-2 text-xs font-semibold text-white transition-colors enabled:hover:bg-[#216e3f] disabled:cursor-not-allowed disabled:border-[#d0d5dd] disabled:bg-[#e4e7ec] disabled:text-[#98a2b3]" disabled>
+          <i class="fas fa-plus" aria-hidden="true"></i> Create zone
+        </button>
+        <button id="clearButton" class="inline-flex min-h-9 cursor-pointer items-center justify-center gap-2 rounded-md border border-[#d0d5dd] bg-white px-3 py-2 text-xs font-semibold text-[#475467] transition-colors enabled:hover:bg-[#f2f4f7] disabled:cursor-not-allowed disabled:bg-[#f2f4f7] disabled:text-[#98a2b3]" disabled>
+          <i class="fas fa-eraser" aria-hidden="true"></i> Clear selection
+        </button>
+        <button id="finishEditButton" class="hidden min-h-9 cursor-pointer items-center justify-center gap-2 rounded-md border border-[#d4a106] bg-[#ffc107] px-3 py-2 text-xs font-semibold text-[#332701] transition-colors enabled:hover:bg-[#e0a800] disabled:cursor-not-allowed disabled:opacity-50">
+          <i class="fas fa-check" aria-hidden="true"></i> Finish editing
+        </button>
+      </div>
+    </section>
+
+    <section class="flex-none rounded-lg border border-[#dfe3e8] bg-white p-3" aria-labelledby="zoneDataHeading">
+      <h2 id="zoneDataHeading" class="mb-2.5 text-sm font-semibold text-[#344054]">All-zone data</h2>
+      <div class="grid grid-cols-2 gap-2">
+        <button id="copyIdsButton" class="inline-flex min-h-9 cursor-pointer items-center justify-center gap-2 rounded-md border border-[#b8d7fb] bg-[#eff6ff] px-3 py-2 text-xs font-semibold text-[#175cd3] transition-colors enabled:hover:bg-[#dbeafe] disabled:cursor-not-allowed disabled:opacity-50" disabled>
+          <i class="fas fa-hashtag" aria-hidden="true"></i> Copy cell IDs
+        </button>
+        <button id="copyGeoButton" class="inline-flex min-h-9 cursor-pointer items-center justify-center gap-2 rounded-md border border-[#b7dfc2] bg-[#effaf2] px-3 py-2 text-xs font-semibold text-[#19733a] transition-colors enabled:hover:bg-[#dcf4e3] disabled:cursor-not-allowed disabled:opacity-50" disabled>
+          <i class="fas fa-copy" aria-hidden="true"></i> Copy GeoJSON
+        </button>
+        <button id="exportGeoButton" class="inline-flex min-h-9 cursor-pointer items-center justify-center gap-2 rounded-md border border-[#d7c8ef] bg-[#f5f0fc] px-3 py-2 text-xs font-semibold text-[#6941a5] transition-colors enabled:hover:bg-[#ebe1f8] disabled:cursor-not-allowed disabled:opacity-50" disabled>
+          <i class="fas fa-download" aria-hidden="true"></i> Export file
+        </button>
+        <button id="importGeoButton" class="inline-flex min-h-9 cursor-pointer items-center justify-center gap-2 rounded-md border border-[#d0d5dd] bg-white px-3 py-2 text-xs font-semibold text-[#475467] transition-colors enabled:hover:bg-[#f2f4f7] disabled:cursor-not-allowed disabled:bg-[#f2f4f7] disabled:text-[#98a2b3]">
+          <i class="fas fa-upload" aria-hidden="true"></i> Import file
+        </button>
+      </div>
+    </section>
     <input type="file" id="geojsonFile" class="hidden" accept=".geojson,.json">
-    <div id="hexagonCounter" class="text-sm font-medium">Selected Hexagons: 0</div>
-    <hr class="border-t border-gray-200" />
-    <strong>Zones</strong>
-    <div id="zonesContainer" class="max-h-60 overflow-y-auto rounded-md border border-[#f1f1f1] px-1 py-1.5"></div>
-    <div id="zonesSummary" class="mt-1 hidden border-t border-[#eaeaea] pt-2 text-[13px]/[1.5] text-[#333] [&_strong]:text-[#111]"></div>
+    <section class="flex flex-none flex-col gap-2" aria-labelledby="zonesHeading">
+      <div class="flex items-start justify-between gap-3">
+        <div>
+          <h2 id="zonesHeading" class="text-base font-semibold text-[#1f2937]">Zones</h2>
+          <p class="mt-0.5 text-xs text-[#667085]">Review zone details and manage each zone.</p>
+        </div>
+        <span id="zoneListStatus" class="flex-none rounded-full bg-[#eef2f6] px-2.5 py-1 text-[11px] font-semibold text-[#475467]" aria-live="polite">0 zones</span>
+      </div>
+      <div class="space-y-2 rounded-lg border border-[#dfe3e8] bg-[#fafbfc] p-2.5">
+        <div class="relative">
+          <i class="fas fa-search pointer-events-none absolute top-1/2 left-3 -translate-y-1/2 text-xs text-[#98a2b3]" aria-hidden="true"></i>
+          <input id="zoneSearchInput" type="search" class="w-full rounded-md border border-[#cfd4dc] bg-white py-2 pr-3 pl-9 text-xs text-[#344054] outline-none placeholder:text-[#98a2b3] focus:border-[#84adff] focus:ring-2 focus:ring-[#2e90fa]/20 disabled:cursor-not-allowed disabled:bg-[#f2f4f7]" placeholder="Search zones by name" aria-label="Search zones by name">
+        </div>
+        <div class="grid grid-cols-2 gap-2">
+          <select id="zoneSortSelect" class="cursor-pointer rounded-md border border-[#cfd4dc] bg-white px-2.5 py-2 text-xs font-medium text-[#475467] outline-none focus:border-[#84adff] focus:ring-2 focus:ring-[#2e90fa]/20 disabled:cursor-not-allowed disabled:bg-[#f2f4f7]" aria-label="Sort zones by">
+            <option value="name">Sort: Name</option>
+            <option value="hexagons">Sort: Hexagons</option>
+            <option value="area">Sort: Area</option>
+          </select>
+          <select id="zoneSortDirectionSelect" class="cursor-pointer rounded-md border border-[#cfd4dc] bg-white px-2.5 py-2 text-xs font-medium text-[#475467] outline-none focus:border-[#84adff] focus:ring-2 focus:ring-[#2e90fa]/20 disabled:cursor-not-allowed disabled:bg-[#f2f4f7]" aria-label="Zone sort direction">
+            <option value="asc">Ascending</option>
+            <option value="desc">Descending</option>
+          </select>
+        </div>
+      </div>
+      <div id="zonesContainer" class="space-y-3 rounded-lg bg-[#f4f6f8] p-2"></div>
+      <div id="zonesSummary" class="hidden rounded-lg border border-[#dfe3e8] bg-[#f8fafc] px-3 py-2.5 text-[#475467]" aria-live="polite"></div>
+    </section>
   </aside>
 
   <!-- ------------------- Your app as a browser ES module ------------------- -->
@@ -81,7 +140,7 @@
 
     // -------- Utility --------
     const fmtInt = (v) => v.toLocaleString(undefined, { maximumFractionDigits: 0 });
-    const ZONE_ACTION_BUTTON_CLASSES = "inline-flex min-h-[30px] min-w-[30px] cursor-pointer items-center justify-center rounded p-1.5 text-sm leading-none text-white transition-colors duration-150 disabled:cursor-not-allowed disabled:opacity-65";
+    const ZONE_ACTION_BUTTON_CLASSES = "inline-flex min-h-9 cursor-pointer items-center justify-center gap-2 rounded-md border px-3 py-2 text-xs font-semibold leading-none transition-colors duration-150 focus:outline-none focus:ring-2 focus:ring-[#007bff]/30 disabled:cursor-not-allowed disabled:opacity-50";
     const computeArea = (hexSet) => {
       let total = 0;
       hexSet.forEach((h) => (total += h3.cellArea(h, "m2")));
@@ -105,6 +164,10 @@
     const importGeoButton = document.getElementById("importGeoButton");
     const geojsonFileInput = document.getElementById("geojsonFile");
     const zonesSummaryEl = document.getElementById("zonesSummary");
+    const zoneSearchInput = document.getElementById("zoneSearchInput");
+    const zoneSortSelect = document.getElementById("zoneSortSelect");
+    const zoneSortDirectionSelect = document.getElementById("zoneSortDirectionSelect");
+    const zoneListStatus = document.getElementById("zoneListStatus");
 
     // Populate resolution dropdown
     for (let r = 0; r <= 15; r++) {
@@ -144,38 +207,118 @@
         totalArea += zone.area;
       });
       zonesSummaryEl.innerHTML = `
-        <strong>Total Zones:</strong> ${zones.length}<br>
-        <strong>Total Hexagons:</strong> ${fmtInt(totalHexagons)}<br>
-        <strong>Total Area:</strong> ${fmtInt(totalArea)} m²
+        <p class="mb-2 text-xs font-semibold text-[#344054]">Zone summary</p>
+        <div class="grid grid-cols-3 divide-x divide-[#dfe3e8]">
+          <div class="pr-2">
+            <span class="block text-[10px] font-semibold uppercase tracking-wide text-[#667085]">Zones</span>
+            <strong class="mt-0.5 block text-sm font-semibold text-[#1f2937]">${fmtInt(zones.length)}</strong>
+          </div>
+          <div class="px-2">
+            <span class="block text-[10px] font-semibold uppercase tracking-wide text-[#667085]">Hexagons</span>
+            <strong class="mt-0.5 block text-sm font-semibold text-[#1f2937]">${fmtInt(totalHexagons)}</strong>
+          </div>
+          <div class="pl-2">
+            <span class="block text-[10px] font-semibold uppercase tracking-wide text-[#667085]">Area</span>
+            <strong class="mt-0.5 block text-sm font-semibold text-[#1f2937]">${fmtInt(totalArea)} m²</strong>
+          </div>
+        </div>
       `;
       zonesSummaryEl.classList.remove("hidden");
     }
 
+    function getVisibleZones() {
+      const query = zoneSearchInput.value.trim().toLocaleLowerCase();
+      const sortKey = zoneSortSelect.value;
+      const direction = zoneSortDirectionSelect.value === "desc" ? -1 : 1;
+
+      return zones
+        .filter((zone) => zone.name.toLocaleLowerCase().includes(query))
+        .sort((a, b) => {
+          let comparison;
+          if (sortKey === "hexagons") {
+            comparison = a.hexagons.size - b.hexagons.size;
+          } else if (sortKey === "area") {
+            comparison = a.area - b.area;
+          } else {
+            comparison = a.name.localeCompare(b.name, undefined, { sensitivity: "base", numeric: true });
+          }
+
+          if (comparison === 0 && sortKey !== "name") {
+            comparison = a.name.localeCompare(b.name, undefined, { sensitivity: "base", numeric: true });
+          }
+          return comparison * direction;
+        });
+    }
+
     function renderZonesList() {
       zonesContainer.innerHTML = "";
-      zones.forEach((z) => {
+      const hasZones = zones.length > 0;
+      zoneSearchInput.disabled = !hasZones;
+      zoneSortSelect.disabled = !hasZones;
+      zoneSortDirectionSelect.disabled = !hasZones;
+
+      if (zones.length === 0) {
+        zoneSearchInput.value = "";
+        zoneListStatus.textContent = "0 zones";
+        zonesContainer.innerHTML = `
+          <div class="flex h-full min-h-40 flex-col items-center justify-center rounded-md border border-dashed border-[#cbd2da] bg-white px-6 text-center">
+            <i class="fas fa-layer-group mb-3 text-2xl text-[#98a2b3]" aria-hidden="true"></i>
+            <p class="text-sm font-semibold text-[#344054]">No zones yet</p>
+            <p class="mt-1 max-w-72 text-xs leading-5 text-[#667085]">Select hexagons on the map, then choose Create Zone.</p>
+          </div>
+        `;
+      }
+
+      const visibleZones = getVisibleZones();
+      const isFiltered = zoneSearchInput.value.trim() !== "";
+      zoneListStatus.textContent = isFiltered
+        ? `${visibleZones.length} of ${zones.length} zones`
+        : `${zones.length} ${zones.length === 1 ? "zone" : "zones"}`;
+
+      if (hasZones && visibleZones.length === 0) {
+        zonesContainer.innerHTML = `
+          <div class="flex h-full min-h-40 flex-col items-center justify-center rounded-md border border-dashed border-[#cbd2da] bg-white px-6 text-center">
+            <i class="fas fa-search mb-3 text-2xl text-[#98a2b3]" aria-hidden="true"></i>
+            <p class="text-sm font-semibold text-[#344054]">No matching zones</p>
+            <p class="mt-1 max-w-72 text-xs leading-5 text-[#667085]">Try a different zone name.</p>
+          </div>
+        `;
+      }
+
+      visibleZones.forEach((z) => {
         const item = document.createElement("div");
-        item.className = "flex items-center justify-between gap-2 border-b border-[#f3f3f3] px-1 py-1.5 last:border-b-0";
+        item.className = `overflow-hidden rounded-lg border bg-white shadow-sm ${editingZoneId === z.id ? "border-[#d4a106] ring-2 ring-[#ffc107]/20" : "border-[#dfe3e8]"}`;
 
         const left = document.createElement("div");
-        left.className = "flex min-w-0 flex-1 items-start gap-2";
+        left.className = "flex items-start gap-3 px-4 py-3.5";
 
-        const swatch = document.createElement("span");
-        swatch.className = "mt-0.5 size-4 flex-none cursor-pointer rounded-[3px] border border-[#979797] bg-(--zone-color)";
+        const swatch = document.createElement("button");
+        swatch.type = "button";
+        swatch.className = "mt-0.5 size-7 flex-none cursor-pointer rounded-md border-2 border-white bg-(--zone-color) shadow-[0_0_0_1px_#98a2b3] focus:outline-none focus:ring-2 focus:ring-[#007bff]/40";
         swatch.style.setProperty("--zone-color", z.color);
-        swatch.title = "Click to change color";
+        swatch.title = `Change color for ${z.name}`;
+        swatch.setAttribute("aria-label", `Change color for ${z.name}`);
         swatch.addEventListener("click", () => changeZoneColor(z.id));
 
         const nameWrap = document.createElement("div");
-        nameWrap.className = "min-w-0";
-        const nameSpan = document.createElement("div");
+        nameWrap.className = "min-w-0 flex-1";
+        const nameSpan = document.createElement("h3");
         nameSpan.textContent = z.name;
         nameSpan.title = z.name;
-        nameSpan.className = "truncate font-semibold";
+        nameSpan.className = "break-words text-base font-semibold leading-5 text-[#1f2937]";
 
         const metaSpan = document.createElement("div");
-        metaSpan.innerHTML = `${z.hexagons.size} hex<br>${fmtInt(z.area)} m²`;
-        metaSpan.className = "text-xs text-[#5e5e5e]";
+        metaSpan.className = "mt-2 flex items-center gap-2 text-xs text-[#475467]";
+        metaSpan.innerHTML = `
+          <span class="inline-flex items-center gap-1.5 rounded-full bg-[#eef2f6] px-2.5 py-1">
+            <i class="fas fa-draw-polygon text-[10px] text-[#667085]" aria-hidden="true"></i>
+            ${fmtInt(z.hexagons.size)} hexagons
+          </span>
+          <span class="inline-flex items-center gap-1.5 rounded-full bg-[#eef2f6] px-2.5 py-1">
+            <i class="fas fa-ruler-combined text-[10px] text-[#667085]" aria-hidden="true"></i>
+            ${fmtInt(z.area)} m²
+          </span>
+        `;
 
         nameWrap.appendChild(nameSpan);
         nameWrap.appendChild(metaSpan);
@@ -184,16 +327,16 @@
         left.appendChild(nameWrap);
 
         const actions = document.createElement("div");
-        actions.className = "flex flex-none flex-row items-center gap-1.5";
+        actions.className = "grid grid-cols-3 gap-2 border-t border-[#e8ebef] bg-[#fafbfc] p-2.5";
 
         // Edit button
         const editBtn = document.createElement("button");
         if (editingZoneId === z.id) {
-          editBtn.className = `${ZONE_ACTION_BUTTON_CLASSES} bg-[#ffc107] px-2.5 text-[13px] text-black enabled:hover:bg-[#e0a800]`;
-          editBtn.innerHTML = '<i class="fas fa-pencil-alt mr-[5px]"></i> Editing…';
+          editBtn.className = `${ZONE_ACTION_BUTTON_CLASSES} border-[#d4a106] bg-[#ffc107] text-[#332701] enabled:hover:bg-[#e0a800]`;
+          editBtn.innerHTML = '<i class="fas fa-pencil-alt" aria-hidden="true"></i> Editing';
         } else {
-          editBtn.className = `${ZONE_ACTION_BUTTON_CLASSES} bg-[#17a2b8] enabled:hover:bg-[#138496]`;
-          editBtn.innerHTML = '<i class="fas fa-pencil-alt"></i>';
+          editBtn.className = `${ZONE_ACTION_BUTTON_CLASSES} border-[#a5dce4] bg-[#edf9fb] text-[#0b7180] enabled:hover:bg-[#d9f3f7]`;
+          editBtn.innerHTML = '<i class="fas fa-pencil-alt" aria-hidden="true"></i> Edit';
           editBtn.title = "Edit Zone";
         }
         editBtn.disabled = editingZoneId !== null && editingZoneId !== z.id;
@@ -201,32 +344,40 @@
 
         // Rename button
         const renameBtn = document.createElement("button");
-        renameBtn.className = `${ZONE_ACTION_BUTTON_CLASSES} bg-[#6c757d] enabled:hover:bg-[#5a6268]`;
-        renameBtn.innerHTML = '<i class="fas fa-font"></i>';
+        renameBtn.className = `${ZONE_ACTION_BUTTON_CLASSES} border-[#d0d5dd] bg-white text-[#475467] enabled:hover:bg-[#f2f4f7]`;
+        renameBtn.innerHTML = '<i class="fas fa-font" aria-hidden="true"></i> Rename';
         renameBtn.title = "Rename Zone";
         renameBtn.disabled = editingZoneId !== null && editingZoneId !== z.id;
         renameBtn.addEventListener("click", () => renameZone(z.id));
 
         // Center/locate button
         const locateBtn = document.createElement("button");
-        locateBtn.className = `${ZONE_ACTION_BUTTON_CLASSES} bg-[#6f42c1] enabled:hover:bg-[#59309f]`;
-        locateBtn.innerHTML = '<i class="fas fa-crosshairs"></i>';
+        locateBtn.className = `${ZONE_ACTION_BUTTON_CLASSES} border-[#d7c8ef] bg-[#f5f0fc] text-[#6941a5] enabled:hover:bg-[#ebe1f8]`;
+        locateBtn.innerHTML = '<i class="fas fa-crosshairs" aria-hidden="true"></i> Locate';
         locateBtn.title = "Center map on zone";
         locateBtn.disabled = editingZoneId !== null && editingZoneId !== z.id;
         locateBtn.addEventListener("click", () => zoomToZone(z.id));
 
+        // Copy this zone's H3 cell IDs
+        const copyCellIdsBtn = document.createElement("button");
+        copyCellIdsBtn.className = `${ZONE_ACTION_BUTTON_CLASSES} border-[#b8d7fb] bg-[#eff6ff] text-[#175cd3] enabled:hover:bg-[#dbeafe]`;
+        copyCellIdsBtn.innerHTML = '<i class="fas fa-hashtag" aria-hidden="true"></i> Cell IDs';
+        copyCellIdsBtn.title = "Copy zone cell IDs";
+        copyCellIdsBtn.setAttribute("aria-label", `Copy cell IDs for ${z.name}`);
+        copyCellIdsBtn.addEventListener("click", () => copyZoneCellIds(z.id));
+
         // Copy this zone as a GeoJSON Feature
         const copyGeoJSONBtn = document.createElement("button");
-        copyGeoJSONBtn.className = `${ZONE_ACTION_BUTTON_CLASSES} bg-[#28a745] enabled:hover:bg-[#218838]`;
-        copyGeoJSONBtn.innerHTML = '<i class="fas fa-copy"></i>';
+        copyGeoJSONBtn.className = `${ZONE_ACTION_BUTTON_CLASSES} border-[#b7dfc2] bg-[#effaf2] text-[#19733a] enabled:hover:bg-[#dcf4e3]`;
+        copyGeoJSONBtn.innerHTML = '<i class="fas fa-copy" aria-hidden="true"></i> GeoJSON';
         copyGeoJSONBtn.title = "Copy zone GeoJSON";
         copyGeoJSONBtn.setAttribute("aria-label", `Copy GeoJSON for ${z.name}`);
         copyGeoJSONBtn.addEventListener("click", () => copyZoneGeoJSON(z.id));
 
         // Delete button
         const deleteBtn = document.createElement("button");
-        deleteBtn.className = `${ZONE_ACTION_BUTTON_CLASSES} bg-[#dc3545] enabled:hover:bg-[#c82333]`;
-        deleteBtn.innerHTML = '<i class="fas fa-trash-alt"></i>';
+        deleteBtn.className = `${ZONE_ACTION_BUTTON_CLASSES} border-[#f2b8bd] bg-[#fff1f2] text-[#b4232f] enabled:hover:bg-[#ffe1e4]`;
+        deleteBtn.innerHTML = '<i class="fas fa-trash-alt" aria-hidden="true"></i> Delete';
         deleteBtn.title = "Delete Zone";
         deleteBtn.disabled = editingZoneId !== null;
         deleteBtn.addEventListener("click", () => deleteZone(z.id));
@@ -234,6 +385,7 @@
         actions.appendChild(editBtn);
         actions.appendChild(renameBtn);
         actions.appendChild(locateBtn);
+        actions.appendChild(copyCellIdsBtn);
         actions.appendChild(copyGeoJSONBtn);
         actions.appendChild(deleteBtn);
 
@@ -244,6 +396,10 @@
       updateCopyButtons();
       updateZonesSummary();
     }
+
+    zoneSearchInput.addEventListener("input", renderZonesList);
+    zoneSortSelect.addEventListener("change", renderZonesList);
+    zoneSortDirectionSelect.addEventListener("change", renderZonesList);
 
     /*************************************************
      * Grid drawing
@@ -337,15 +493,21 @@
     });
     let isDrawing = false;
 
+    function setDrawButtonState(drawing) {
+      drawButton.innerHTML = drawing
+        ? '<i class="fas fa-times" aria-hidden="true"></i> Cancel drawing'
+        : '<i class="fas fa-draw-polygon" aria-hidden="true"></i> Draw polygon';
+    }
+
     drawButton.addEventListener("click", () => {
       if (isDrawing) {
         map.removeControl(drawControl);
-        drawButton.textContent = "Draw Polygon";
+        setDrawButtonState(false);
         isDrawing = false;
       } else {
         if (editingZoneId !== null) return;
         map.addControl(drawControl);
-        drawButton.textContent = "Cancel Drawing";
+        setDrawButtonState(true);
         isDrawing = true;
       }
     });
@@ -356,7 +518,7 @@
       const hexagons = h3.polygonToCells(poly, h3Resolution, false);
       hexagons.forEach((h) => { if (hexToZone[h] === undefined) selectHex(h); });
       map.removeControl(drawControl);
-      drawButton.textContent = "Draw Polygon";
+      setDrawButtonState(false);
       isDrawing = false;
     });
 
@@ -492,6 +654,7 @@
       createZoneButton.disabled = true;
       importGeoButton.disabled = true;
       finishEditButton.classList.remove("hidden");
+      finishEditButton.classList.add("flex");
       renderZonesList();
     }
 
@@ -502,6 +665,7 @@
       resolutionSelect.disabled = false;
       createZoneButton.disabled = selectedCells.size === 0;
       importGeoButton.disabled = false;
+      finishEditButton.classList.remove("flex");
       finishEditButton.classList.add("hidden");
       renderZonesList();
     }
@@ -571,6 +735,24 @@
       return { type: "FeatureCollection", features };
     }
 
+    function getCellIdsForZone(zone) {
+      return {
+        zone_name: zone.name,
+        zone_color: zone.color,
+        hex_count: zone.hexagons.size,
+        area_m2: Math.round(zone.area),
+        zone_cells: Array.from(zone.hexagons),
+      };
+    }
+
+    function copyZoneCellIds(zoneId) {
+      const zone = zones.find((z) => z.id === zoneId);
+      if (!zone) return;
+
+      navigator.clipboard.writeText(JSON.stringify(getCellIdsForZone(zone), null, 2))
+        .then(() => alert(`Cell IDs for zone "${zone.name}" copied!`));
+    }
+
     function copyZoneGeoJSON(zoneId) {
       const zone = zones.find((z) => z.id === zoneId);
       if (!zone) return;
@@ -581,13 +763,7 @@
     }
 
     copyIdsButton.addEventListener("click", () => {
-      const payload = zones.map((z) => ({
-        zone_name: z.name,
-        zone_color: z.color,
-        hex_count: z.hexagons.size,
-        area_m2: Math.round(z.area),
-        zone_cells: Array.from(z.hexagons),
-      }));
+      const payload = zones.map(getCellIdsForZone);
       navigator.clipboard.writeText(JSON.stringify(payload, null, 2))
         .then(() => alert("Zone cell IDs copied!"));
     });

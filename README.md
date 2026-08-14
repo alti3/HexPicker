@@ -28,6 +28,7 @@ Interactive web map for drawing **non‑overlapping, color‑coded zones** on an
 | • Delete zones.                                                                        |                                                                                                                                                                                                     |
 | • **Live summary:** Total count of zones, hexagons, and area displayed below the list.   |                                                                                                                                                                                                     |
 | • Center on zone: crosshairs button fits map to the zone’s bounding box (north/south/east/west bounds). |                                                                                                                                                                                                     |
+| • Copy an individual zone’s H3 cell IDs from its hash button.                       |                                                                                                                                                                                                     |
 | • Copy an individual zone as a GeoJSON Feature from its copy button.                    |                                                                                                                                                                                                     |
 | **Styling**                                                                            | Zone interiors fill with chosen color; a bold outline is generated from `h3.cellsToMultiPolygon`, so only the outer/inner perimeter is emphasized.                                                  |
 | **Export & Import**                                                                    |                                                                                                                                                                                                     |
@@ -65,7 +66,7 @@ Interactive web map for drawing **non‑overlapping, color‑coded zones** on an
 6.  **Center a zone**
     Press the <i class="fas fa-crosshairs"></i> **Center** button next to a zone to pan/zoom the map so the zone’s polygon is fully in view (using its northern‑most, southern‑most, eastern‑most, and western‑most extents).
 7.  **Copy a zone**
-    Press the <i class="fas fa-copy"></i> **Copy GeoJSON** button next to a zone to copy that zone as a single GeoJSON Feature.
+    Press the <i class="fas fa-hashtag"></i> **Copy Cell IDs** button to copy that zone’s details and H3 cell IDs, or the <i class="fas fa-copy"></i> **Copy GeoJSON** button to copy it as a single GeoJSON Feature.
 8.  **Delete zone**
     Press the <i class="fas fa-trash-alt"></i> **Delete** button next to a zone.
 9.  **Export**
