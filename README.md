@@ -42,7 +42,8 @@ Interactive web map for drawing **non‑overlapping, color‑coded zones** on an
 
 ## Tech stack
 
-* **HTML / CSS / JavaScript** (vanilla)
+* **HTML / JavaScript** (vanilla)
+* [Tailwind CSS v4](https://tailwindcss.com/) – utility-first styling loaded from the browser CDN
 * [Leaflet](https://leafletjs.com/) – map rendering
 * [Leaflet.draw](https://leaflet.github.io/Leaflet.draw/) – free‑hand polygon tool
 * [H3‑js](https://github.com/uber/h3-js) – geospatial indexing & polygon utilities

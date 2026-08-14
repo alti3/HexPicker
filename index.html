@@ -1,10 +1,13 @@
 <!DOCTYPE html>
-<html lang="en">
+<html lang="en" class="h-full">
 
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
   <title>Hex Picker with Zones</title>
+
+  <!-- Tailwind CSS v4 browser CDN -->
+  <script src="https://cdn.jsdelivr.net/npm/@tailwindcss/browser@4.3.3"></script>
 
   <!-- Font Awesome CSS -->
   <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/5.15.4/css/all.min.css" />
@@ -15,251 +18,31 @@
   <!-- Leaflet Draw CSS -->
   <link rel="stylesheet" href="https://unpkg.com/leaflet-draw@1.0.4/dist/leaflet.draw.css" />
 
-  <style>
-    html,
-    body,
-    #map {
-      width: 100%;
-      height: 100%;
-      margin: 0;
-    }
-
-    /* ------------------ Card Layout ------------------ */
-    .card {
-      position: absolute;
-      top: 12px;
-      right: 12px;
-      z-index: 1000;
-      background: #ffffff;
-      border: 1px solid #e1e1e1;
-      border-radius: 10px;
-      box-shadow: 0 4px 16px rgba(0, 0, 0, 0.08);
-      padding: 16px 18px;
-      width: 320px;
-      display: flex;
-      flex-direction: column;
-      gap: 12px;
-      font-family: system-ui, -apple-system, "Segoe UI", Roboto, sans-serif;
-    }
-
-    .controls {
-      display: grid;
-      grid-template-columns: repeat(2, 1fr);
-      gap: 8px;
-    }
-
-    .card select,
-    .card button {
-      padding: 8px 10px;
-      font-size: 14px;
-      border-radius: 6px;
-      border: 1px solid #ccc;
-      background: #f9f9f9;
-      cursor: pointer;
-      transition: background 0.15s;
-    }
-
-    .card button {
-      background: #007bff;
-      color: #ffffff;
-      border: none;
-    }
-
-    .card button:hover:not(:disabled) {
-      background: #0069d9;
-    }
-
-    .card button:disabled {
-      background: #d6d6d6;
-      cursor: not-allowed;
-    }
-
-    #hexagonCounter {
-      font-size: 14px;
-      font-weight: 500;
-    }
-
-    /* ------------------ Zones list ------------------ */
-    #zonesContainer {
-      max-height: 240px;
-      overflow-y: auto;
-      border: 1px solid #f1f1f1;
-      padding: 6px 4px;
-      border-radius: 6px;
-    }
-
-    .zone-item {
-      display: flex;
-      align-items: center;
-      justify-content: space-between;
-      gap: 8px;
-      padding: 6px 4px;
-      border-bottom: 1px solid #f3f3f3;
-    }
-
-    .zone-item:last-child {
-      border-bottom: none;
-    }
-
-    .zone-left {
-      display: flex;
-      align-items: flex-start;
-      gap: 8px;
-      min-width: 0;
-      flex: 1;
-    }
-
-    .zone-left>div {
-      min-width: 0;
-    }
-
-    .color-swatch {
-      width: 16px;
-      height: 16px;
-      border-radius: 3px;
-      border: 1px solid #979797;
-      cursor: pointer;
-      flex: 0 0 16px;
-      margin-top: 2px;
-    }
-
-    .zone-name {
-      font-weight: 600;
-      overflow: hidden;
-      text-overflow: ellipsis;
-      white-space: nowrap;
-    }
-
-    .zone-meta {
-      font-size: 12px;
-      color: #5e5e5e;
-    }
-
-    .action-btns {
-      display: flex;
-      flex-direction: row;
-      gap: 6px;
-      align-items: center;
-      flex: 0 0 auto;
-    }
-
-    .action-btns>button {
-      padding: 6px;
-      line-height: 1;
-      display: inline-flex;
-      align-items: center;
-      justify-content: center;
-      min-width: 30px;
-      min-height: 30px;
-      border-radius: 4px;
-      border: none;
-      transition: background-color 0.15s ease;
-    }
-
-    .action-btns>button i {
-      font-size: 14px;
-      color: inherit;
-    }
-
-    .action-btns>button:disabled {
-      opacity: .65;
-    }
-
-    .edit-btn {
-      background: #17a2b8;
-      color: #fff;
-    }
-
-    .edit-btn:hover:not(:disabled) {
-      background: #138496;
-    }
-
-    .edit-active {
-      background: #ffc107 !important;
-      color: #000 !important;
-      padding: 6px 10px !important;
-      font-size: 13px;
-    }
-
-    .edit-active i {
-      margin-right: 5px;
-    }
-
-    .delete-btn {
-      background: #dc3545;
-      color: #fff;
-    }
-
-    .delete-btn:hover:not(:disabled) {
-      background: #c82333;
-    }
-
-    .locate-btn {
-      background: #6f42c1;
-      color: #fff;
-    }
-
-    .locate-btn:hover:not(:disabled) {
-      background: #59309f;
-    }
-
-    .copy-zone-geojson-btn {
-      background: #28a745;
-      color: #fff;
-    }
-
-    .copy-zone-geojson-btn:hover:not(:disabled) {
-      background: #218838;
-    }
-
-    /* ------------------ Zones Summary ------------------ */
-    #zonesSummary {
-      font-size: 13px;
-      color: #333;
-      padding-top: 8px;
-      margin-top: 4px;
-      border-top: 1px solid #eaeaea;
-      line-height: 1.5;
-    }
-
-    #zonesSummary strong {
-      color: #111;
-    }
-
-    .rename-btn {
-      background: #6c757d;
-      color: #fff;
-    }
-
-    .rename-btn:hover:not(:disabled) {
-      background: #5a6268;
-    }
-  </style>
 </head>
 
-<body>
-  <div id="map"></div>
+<body class="relative m-0 h-full w-full overflow-hidden font-sans">
+  <div id="map" class="h-full w-full"></div>
 
   <!-- ------------- Side Card ------------- -->
-  <div class="card">
-    <div class="controls">
-      <select id="resolutionSelect"></select>
-      <button id="drawButton">Draw Polygon</button>
-      <button id="clearButton" disabled>Clear Selection</button>
-      <button id="createZoneButton" disabled>Create Zone</button>
-      <button id="finishEditButton" style="display:none; background:#28a745">Finish Editing</button>
-      <button id="copyIdsButton" disabled>Copy Cell IDs</button>
-      <button id="copyGeoButton" disabled>Copy GeoJSON</button>
-      <button id="exportGeoButton" disabled>Export GeoJSON</button>
-      <button id="importGeoButton">Import GeoJSON</button>
+  <aside class="absolute top-3 right-3 z-[1000] flex w-[calc(100%-1.5rem)] max-w-80 flex-col gap-3 rounded-[10px] border border-[#e1e1e1] bg-white px-[18px] py-4 shadow-[0_4px_16px_rgba(0,0,0,0.08)]">
+    <div class="grid grid-cols-2 gap-2">
+      <select id="resolutionSelect" class="cursor-pointer rounded-md border border-[#ccc] bg-[#f9f9f9] px-2.5 py-2 text-sm"></select>
+      <button id="drawButton" class="cursor-pointer rounded-md bg-[#007bff] px-2.5 py-2 text-sm text-white transition-colors duration-150 enabled:hover:bg-[#0069d9] disabled:cursor-not-allowed disabled:bg-[#d6d6d6]">Draw Polygon</button>
+      <button id="clearButton" class="cursor-pointer rounded-md bg-[#007bff] px-2.5 py-2 text-sm text-white transition-colors duration-150 enabled:hover:bg-[#0069d9] disabled:cursor-not-allowed disabled:bg-[#d6d6d6]" disabled>Clear Selection</button>
+      <button id="createZoneButton" class="cursor-pointer rounded-md bg-[#007bff] px-2.5 py-2 text-sm text-white transition-colors duration-150 enabled:hover:bg-[#0069d9] disabled:cursor-not-allowed disabled:bg-[#d6d6d6]" disabled>Create Zone</button>
+      <button id="finishEditButton" class="hidden cursor-pointer rounded-md bg-[#28a745] px-2.5 py-2 text-sm text-white transition-colors duration-150 enabled:hover:bg-[#218838] disabled:cursor-not-allowed disabled:bg-[#d6d6d6]">Finish Editing</button>
+      <button id="copyIdsButton" class="cursor-pointer rounded-md bg-[#007bff] px-2.5 py-2 text-sm text-white transition-colors duration-150 enabled:hover:bg-[#0069d9] disabled:cursor-not-allowed disabled:bg-[#d6d6d6]" disabled>Copy Cell IDs</button>
+      <button id="copyGeoButton" class="cursor-pointer rounded-md bg-[#007bff] px-2.5 py-2 text-sm text-white transition-colors duration-150 enabled:hover:bg-[#0069d9] disabled:cursor-not-allowed disabled:bg-[#d6d6d6]" disabled>Copy GeoJSON</button>
+      <button id="exportGeoButton" class="cursor-pointer rounded-md bg-[#007bff] px-2.5 py-2 text-sm text-white transition-colors duration-150 enabled:hover:bg-[#0069d9] disabled:cursor-not-allowed disabled:bg-[#d6d6d6]" disabled>Export GeoJSON</button>
+      <button id="importGeoButton" class="cursor-pointer rounded-md bg-[#007bff] px-2.5 py-2 text-sm text-white transition-colors duration-150 enabled:hover:bg-[#0069d9] disabled:cursor-not-allowed disabled:bg-[#d6d6d6]">Import GeoJSON</button>
     </div>
-    <input type="file" id="geojsonFile" accept=".geojson,.json" style="display:none;">
-    <div id="hexagonCounter">Selected Hexagons: 0</div>
-    <hr />
+    <input type="file" id="geojsonFile" class="hidden" accept=".geojson,.json">
+    <div id="hexagonCounter" class="text-sm font-medium">Selected Hexagons: 0</div>
+    <hr class="border-t border-gray-200" />
     <strong>Zones</strong>
-    <div id="zonesContainer"></div>
-    <div id="zonesSummary"></div>
-  </div>
+    <div id="zonesContainer" class="max-h-60 overflow-y-auto rounded-md border border-[#f1f1f1] px-1 py-1.5"></div>
+    <div id="zonesSummary" class="mt-1 hidden border-t border-[#eaeaea] pt-2 text-[13px]/[1.5] text-[#333] [&_strong]:text-[#111]"></div>
+  </aside>
 
   <!-- ------------------- Your app as a browser ES module ------------------- -->
   <script type="module">
@@ -298,6 +81,7 @@
 
     // -------- Utility --------
     const fmtInt = (v) => v.toLocaleString(undefined, { maximumFractionDigits: 0 });
+    const ZONE_ACTION_BUTTON_CLASSES = "inline-flex min-h-[30px] min-w-[30px] cursor-pointer items-center justify-center rounded p-1.5 text-sm leading-none text-white transition-colors duration-150 disabled:cursor-not-allowed disabled:opacity-65";
     const computeArea = (hexSet) => {
       let total = 0;
       hexSet.forEach((h) => (total += h3.cellArea(h, "m2")));
@@ -350,7 +134,7 @@
     function updateZonesSummary() {
       if (zones.length === 0) {
         zonesSummaryEl.innerHTML = "";
-        zonesSummaryEl.style.display = "none";
+        zonesSummaryEl.classList.add("hidden");
         return;
       }
       let totalHexagons = 0;
@@ -364,33 +148,34 @@
         <strong>Total Hexagons:</strong> ${fmtInt(totalHexagons)}<br>
         <strong>Total Area:</strong> ${fmtInt(totalArea)} m²
       `;
-      zonesSummaryEl.style.display = "block";
+      zonesSummaryEl.classList.remove("hidden");
     }
 
     function renderZonesList() {
       zonesContainer.innerHTML = "";
       zones.forEach((z) => {
         const item = document.createElement("div");
-        item.className = "zone-item";
+        item.className = "flex items-center justify-between gap-2 border-b border-[#f3f3f3] px-1 py-1.5 last:border-b-0";
 
         const left = document.createElement("div");
-        left.className = "zone-left";
+        left.className = "flex min-w-0 flex-1 items-start gap-2";
 
         const swatch = document.createElement("span");
-        swatch.className = "color-swatch";
-        swatch.style.background = z.color;
+        swatch.className = "mt-0.5 size-4 flex-none cursor-pointer rounded-[3px] border border-[#979797] bg-(--zone-color)";
+        swatch.style.setProperty("--zone-color", z.color);
         swatch.title = "Click to change color";
         swatch.addEventListener("click", () => changeZoneColor(z.id));
 
         const nameWrap = document.createElement("div");
+        nameWrap.className = "min-w-0";
         const nameSpan = document.createElement("div");
         nameSpan.textContent = z.name;
         nameSpan.title = z.name;
-        nameSpan.className = "zone-name";
+        nameSpan.className = "truncate font-semibold";
 
         const metaSpan = document.createElement("div");
         metaSpan.innerHTML = `${z.hexagons.size} hex<br>${fmtInt(z.area)} m²`;
-        metaSpan.className = "zone-meta";
+        metaSpan.className = "text-xs text-[#5e5e5e]";
 
         nameWrap.appendChild(nameSpan);
         nameWrap.appendChild(metaSpan);
@@ -399,15 +184,15 @@
         left.appendChild(nameWrap);
 
         const actions = document.createElement("div");
-        actions.className = "action-btns";
+        actions.className = "flex flex-none flex-row items-center gap-1.5";
 
         // Edit button
         const editBtn = document.createElement("button");
-        editBtn.className = "edit-btn";
         if (editingZoneId === z.id) {
-          editBtn.innerHTML = '<i class="fas fa-pencil-alt"></i> Editing…';
-          editBtn.classList.add("edit-active");
+          editBtn.className = `${ZONE_ACTION_BUTTON_CLASSES} bg-[#ffc107] px-2.5 text-[13px] text-black enabled:hover:bg-[#e0a800]`;
+          editBtn.innerHTML = '<i class="fas fa-pencil-alt mr-[5px]"></i> Editing…';
         } else {
+          editBtn.className = `${ZONE_ACTION_BUTTON_CLASSES} bg-[#17a2b8] enabled:hover:bg-[#138496]`;
           editBtn.innerHTML = '<i class="fas fa-pencil-alt"></i>';
           editBtn.title = "Edit Zone";
         }
@@ -416,7 +201,7 @@
 
         // Rename button
         const renameBtn = document.createElement("button");
-        renameBtn.className = "rename-btn";
+        renameBtn.className = `${ZONE_ACTION_BUTTON_CLASSES} bg-[#6c757d] enabled:hover:bg-[#5a6268]`;
         renameBtn.innerHTML = '<i class="fas fa-font"></i>';
         renameBtn.title = "Rename Zone";
         renameBtn.disabled = editingZoneId !== null && editingZoneId !== z.id;
@@ -424,7 +209,7 @@
 
         // Center/locate button
         const locateBtn = document.createElement("button");
-        locateBtn.className = "locate-btn";
+        locateBtn.className = `${ZONE_ACTION_BUTTON_CLASSES} bg-[#6f42c1] enabled:hover:bg-[#59309f]`;
         locateBtn.innerHTML = '<i class="fas fa-crosshairs"></i>';
         locateBtn.title = "Center map on zone";
         locateBtn.disabled = editingZoneId !== null && editingZoneId !== z.id;
@@ -432,7 +217,7 @@
 
         // Copy this zone as a GeoJSON Feature
         const copyGeoJSONBtn = document.createElement("button");
-        copyGeoJSONBtn.className = "copy-zone-geojson-btn";
+        copyGeoJSONBtn.className = `${ZONE_ACTION_BUTTON_CLASSES} bg-[#28a745] enabled:hover:bg-[#218838]`;
         copyGeoJSONBtn.innerHTML = '<i class="fas fa-copy"></i>';
         copyGeoJSONBtn.title = "Copy zone GeoJSON";
         copyGeoJSONBtn.setAttribute("aria-label", `Copy GeoJSON for ${z.name}`);
@@ -440,9 +225,9 @@
 
         // Delete button
         const deleteBtn = document.createElement("button");
+        deleteBtn.className = `${ZONE_ACTION_BUTTON_CLASSES} bg-[#dc3545] enabled:hover:bg-[#c82333]`;
         deleteBtn.innerHTML = '<i class="fas fa-trash-alt"></i>';
         deleteBtn.title = "Delete Zone";
-        deleteBtn.className = "delete-btn";
         deleteBtn.disabled = editingZoneId !== null;
         deleteBtn.addEventListener("click", () => deleteZone(z.id));
 
@@ -706,7 +491,7 @@
       resolutionSelect.disabled = true;
       createZoneButton.disabled = true;
       importGeoButton.disabled = true;
-      finishEditButton.style.display = "block";
+      finishEditButton.classList.remove("hidden");
       renderZonesList();
     }
 
@@ -717,7 +502,7 @@
       resolutionSelect.disabled = false;
       createZoneButton.disabled = selectedCells.size === 0;
       importGeoButton.disabled = false;
-      finishEditButton.style.display = "none";
+      finishEditButton.classList.add("hidden");
       renderZonesList();
     }
 
